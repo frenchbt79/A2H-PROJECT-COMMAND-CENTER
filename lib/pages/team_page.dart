@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../models/project_models.dart';
 import '../state/project_providers.dart';
+import '../widgets/crud_dialogs.dart';
 
 class TeamPage extends ConsumerStatefulWidget {
   const TeamPage({super.key});
@@ -47,10 +48,18 @@ class _TeamPageState extends ConsumerState<TeamPage> {
           Row(
             children: [
               Text('PROJECT TEAM', style: AppTheme.heading),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.person_add_outlined, size: 20, color: Tokens.accent),
+                tooltip: 'Add Team Member',
+                onPressed: () => showAddTeamMemberDialog(context, ref),
+              ),
               const Spacer(),
               _StatChip(label: '${team.length} Members', icon: Icons.people_outline),
               const SizedBox(width: 8),
               _StatChip(label: '${companies.length} Firms', icon: Icons.business_outlined),
+              const SizedBox(width: 8),
+              _AddButton(onTap: () => showAddTeamMemberDialog(context, ref)),
             ],
           ),
           const SizedBox(height: Tokens.spaceMd),
@@ -216,17 +225,16 @@ class _StatChip extends StatelessWidget {
 }
 
 // ── Team card ───────────────────────────────────────────────
-class _TeamCard extends StatelessWidget {
+class _TeamCard extends ConsumerWidget {
   final TeamMember member;
   const _TeamCard({required this.member});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GlassCard(
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          // Avatar
           CircleAvatar(
             radius: 22,
             backgroundColor: member.avatarColor.withValues(alpha: 0.2),
@@ -240,7 +248,6 @@ class _TeamCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +273,52 @@ class _TeamCard extends StatelessWidget {
               ],
             ),
           ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: () => showAddTeamMemberDialog(context, ref),
+                child: const Icon(Icons.edit_outlined, size: 16, color: Tokens.textMuted),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () async {
+                  final confirmed = await showDeleteConfirmation(context, member.name);
+                  if (confirmed) ref.read(teamProvider.notifier).remove(member.id);
+                },
+                child: const Icon(Icons.delete_outline, size: 16, color: Tokens.textMuted),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _AddButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Tokens.accent.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(Tokens.radiusSm),
+          border: Border.all(color: Tokens.accent.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add, size: 14, color: Tokens.accent),
+            const SizedBox(width: 4),
+            Text('Add', style: AppTheme.caption.copyWith(fontSize: 11, color: Tokens.accent, fontWeight: FontWeight.w600)),
+          ],
+        ),
       ),
     );
   }

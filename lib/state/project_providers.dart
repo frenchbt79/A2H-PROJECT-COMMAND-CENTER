@@ -5,16 +5,85 @@ import '../main.dart' show storageServiceProvider;
 import 'default_data.dart';
 
 // ═══════════════════════════════════════════════════════════
-// READ-ONLY PROVIDERS (load from storage or seed defaults)
+// MUTABLE PROVIDERS (StateNotifier — auto-save on mutation)
 // ═══════════════════════════════════════════════════════════
 
-final teamProvider = Provider<List<TeamMember>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadTeam();
-  if (saved.isNotEmpty) return saved;
-  storage.saveTeam(DefaultData.team);
-  return DefaultData.team;
+class TeamNotifier extends StateNotifier<List<TeamMember>> {
+  final StorageService _storage;
+
+  TeamNotifier(this._storage) : super([]) {
+    final saved = _storage.loadTeam();
+    state = saved.isNotEmpty ? saved : DefaultData.team;
+    if (saved.isEmpty) _storage.saveTeam(state);
+  }
+
+  void add(TeamMember member) {
+    state = [...state, member];
+    _storage.saveTeam(state);
+  }
+
+  void remove(String id) {
+    state = state.where((m) => m.id != id).toList();
+    _storage.saveTeam(state);
+  }
+
+  void update(TeamMember updated) {
+    state = [
+      for (final m in state)
+        if (m.id == updated.id) updated else m,
+    ];
+    _storage.saveTeam(state);
+  }
+}
+
+final teamProvider = StateNotifierProvider<TeamNotifier, List<TeamMember>>((ref) {
+  return TeamNotifier(ref.watch(storageServiceProvider));
 });
+
+class RfiNotifier extends StateNotifier<List<RfiItem>> {
+  final StorageService _storage;
+
+  RfiNotifier(this._storage) : super([]) {
+    final saved = _storage.loadRfis();
+    state = saved.isNotEmpty ? saved : DefaultData.rfis;
+    if (saved.isEmpty) _storage.saveRfis(state);
+  }
+
+  void add(RfiItem rfi) {
+    state = [...state, rfi];
+    _storage.saveRfis(state);
+  }
+
+  void remove(String id) {
+    state = state.where((r) => r.id != id).toList();
+    _storage.saveRfis(state);
+  }
+
+  void update(RfiItem rfi) {
+    state = [
+      for (final r in state)
+        if (r.id == rfi.id) rfi else r,
+    ];
+    _storage.saveRfis(state);
+  }
+
+  String nextNumber() {
+    final nums = state.map((r) {
+      final match = RegExp(r'RFI-(\d+)').firstMatch(r.number);
+      return match != null ? int.parse(match.group(1)!) : 0;
+    });
+    final max = nums.isEmpty ? 0 : nums.reduce((a, b) => a > b ? a : b);
+    return 'RFI-${(max + 1).toString().padLeft(3, '0')}';
+  }
+}
+
+final rfisProvider = StateNotifierProvider<RfiNotifier, List<RfiItem>>((ref) {
+  return RfiNotifier(ref.watch(storageServiceProvider));
+});
+
+// ═══════════════════════════════════════════════════════════
+// READ-ONLY PROVIDERS (load from storage or seed defaults)
+// ═══════════════════════════════════════════════════════════
 
 final contractsProvider = Provider<List<ContractItem>>((ref) {
   final storage = ref.watch(storageServiceProvider);
@@ -96,14 +165,6 @@ final projectInfoProvider = Provider<List<ProjectInfoEntry>>((ref) {
   return DefaultData.projectInfo;
 });
 
-final rfisProvider = Provider<List<RfiItem>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadRfis();
-  if (saved.isNotEmpty) return saved;
-  storage.saveRfis(DefaultData.rfis);
-  return DefaultData.rfis;
-});
-
 // ═══════════════════════════════════════════════════════════
 // ACTIVITY / NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════
@@ -148,7 +209,7 @@ final unreadCountProvider = Provider<int>((ref) {
 });
 
 // ═══════════════════════════════════════════════════════════
-// MUTABLE PROVIDERS (StateNotifier — auto-save on mutation)
+// OTHER MUTABLE PROVIDERS
 // ═══════════════════════════════════════════════════════════
 
 class TodoNotifier extends StateNotifier<List<TodoItem>> {
@@ -175,6 +236,16 @@ class TodoNotifier extends StateNotifier<List<TodoItem>> {
       assignee: assignee,
       dueDate: dueDate,
     )];
+    _storage.saveTodos(state);
+  }
+
+  void edit(String id, {required String text, String? assignee, DateTime? dueDate}) {
+    state = [
+      for (final t in state)
+        if (t.id == id)
+          TodoItem(id: t.id, text: text, done: t.done, assignee: assignee, dueDate: dueDate)
+        else t,
+    ];
     _storage.saveTodos(state);
   }
 

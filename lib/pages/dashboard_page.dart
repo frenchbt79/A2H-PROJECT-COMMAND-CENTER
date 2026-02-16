@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
@@ -11,13 +11,12 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < Tokens.mobileBreakpoint;
-        if (isMobile) return _MobileLayout();
-        return _DesktopLayout();
-      },
-    );
+    // Use full screen width so the dashboard doesn't go mobile
+    // when the shell is already in desktop mode with sidebar visible.
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < Tokens.mobileBreakpoint;
+    if (isMobile) return _MobileLayout();
+    return _DesktopLayout();
   }
 }
 
@@ -87,7 +86,7 @@ class _MobileLayout extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// GANTT CARD — reads from scheduleProvider
+// GANTT CARD â€” reads from scheduleProvider
 // ═══════════════════════════════════════════════════════════
 class _GanttCard extends ConsumerWidget {
   @override
@@ -114,47 +113,53 @@ class _GanttCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final barAreaWidth = constraints.maxWidth - 130;
-                return Column(
-                  children: phases.map((phase) {
-                    final color = switch (phase.status) {
-                      'Complete' => Tokens.chipGreen,
-                      'In Progress' => Tokens.chipBlue,
-                      _ => Tokens.textMuted,
-                    };
-                    final startFrac = phase.start.difference(earliest).inDays / totalDays;
-                    final widthFrac = phase.end.difference(phase.start).inDays / totalDays;
+            child: Column(
+              children: phases.map((phase) {
+                final color = switch (phase.status) {
+                  'Complete' => Tokens.chipGreen,
+                  'In Progress' => Tokens.chipBlue,
+                  _ => Tokens.textMuted,
+                };
+                final startFrac = phase.start.difference(earliest).inDays / totalDays;
+                final widthFrac = phase.end.difference(phase.start).inDays / totalDays;
 
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          children: [
-                            SizedBox(width: 130, child: Text(phase.name, style: AppTheme.caption.copyWith(fontSize: 11), overflow: TextOverflow.ellipsis)),
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  Positioned.fill(child: Center(child: Container(height: 1, color: Tokens.glassBorder))),
-                                  Positioned(
-                                    left: startFrac * barAreaWidth,
-                                    child: Container(
-                                      width: widthFrac * barAreaWidth,
-                                      height: 14,
-                                      decoration: BoxDecoration(color: color.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(4)),
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 130, child: Text(phase.name, style: AppTheme.caption.copyWith(fontSize: 11), overflow: TextOverflow.ellipsis)),
+                        Expanded(
+                          child: ClipRect(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final barArea = constraints.maxWidth;
+                                return Stack(
+                                  children: [
+                                    Positioned.fill(child: Center(child: Container(height: 1, color: Tokens.glassBorder))),
+                                    Positioned(
+                                      left: startFrac * barArea,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Center(
+                                        child: Container(
+                                          width: widthFrac * barArea,
+                                          height: 14,
+                                          decoration: BoxDecoration(color: color.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(4)),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                );
+                              },
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      ],
+                    ),
+                  ),
                 );
-              },
+              }).toList(),
             ),
           ),
         ],
@@ -182,7 +187,7 @@ class _LegendDot extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// RECENT FILES CARD — reads from filesProvider
+// RECENT FILES CARD â€” reads from filesProvider
 // ═══════════════════════════════════════════════════════════
 class _RecentFilesCard extends ConsumerWidget {
   @override
@@ -235,11 +240,31 @@ class _RecentFilesCard extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ACTIVE TO-DOS CARD — reads from todosProvider
+// ACTIVE TO-DOS CARD â€” reads from todosProvider
 // ═══════════════════════════════════════════════════════════
-class _ActiveTodosCard extends ConsumerWidget {
+class _ActiveTodosCard extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ActiveTodosCard> createState() => _ActiveTodosCardState();
+}
+
+class _ActiveTodosCardState extends ConsumerState<_ActiveTodosCard> {
+  final _controller = TextEditingController();
+
+  void _addTodo() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    ref.read(todosProvider.notifier).add(text);
+    _controller.clear();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final todos = ref.watch(todosProvider);
     final doneCount = todos.where((t) => t.done).length;
 
@@ -261,7 +286,17 @@ class _ActiveTodosCard extends ConsumerWidget {
               itemCount: todos.length,
               itemBuilder: (context, i) {
                 final todo = todos[i];
-                return Padding(
+                return Dismissible(
+                  key: ValueKey(todo.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 12),
+                    color: Tokens.chipRed.withValues(alpha: 0.2),
+                    child: const Icon(Icons.delete_outline, size: 16, color: Tokens.chipRed),
+                  ),
+                  onDismissed: (_) => ref.read(todosProvider.notifier).remove(todo.id),
+                  child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Row(
                     children: [
@@ -286,10 +321,69 @@ class _ActiveTodosCard extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 14,
+                          icon: Icon(Icons.delete_outline, color: Tokens.chipRed.withValues(alpha: 0.7)),
+                          onPressed: () => ref.read(todosProvider.notifier).remove(todo.id),
+                          tooltip: 'Delete',
+                        ),
+                      ),
                     ],
                   ),
-                );
+                ));
               },
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 32,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Tokens.glassFill,
+                      border: Border.all(color: Tokens.glassBorder),
+                      borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      style: AppTheme.body.copyWith(fontSize: 12, color: Tokens.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Add a new to-do...',
+                        hintStyle: AppTheme.body.copyWith(fontSize: 12, color: Tokens.textMuted),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        border: InputBorder.none,
+                      ),
+                      onSubmitted: (_) => _addTodo(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 18,
+                    icon: const Icon(Icons.add, color: Tokens.accent),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Tokens.accent.withValues(alpha: 0.15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                        side: const BorderSide(color: Tokens.accent, width: 0.5),
+                      ),
+                    ),
+                    onPressed: _addTodo,
+                    tooltip: 'Add to-do',
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -319,11 +413,12 @@ class _CalendarCardStandalone extends StatelessWidget {
           const SizedBox(height: 8),
           Row(children: days.map((d) => Expanded(child: Center(child: Text(d, style: AppTheme.caption.copyWith(fontSize: 10))))).toList()),
           const SizedBox(height: 4),
-          Expanded(
+          Flexible(
             child: GridView.count(
               crossAxisCount: 7,
+              shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.3,
+              childAspectRatio: 1.2,
               children: cells.map((d) => Center(
                 child: d == 0 ? const SizedBox.shrink() : Container(
                   width: 26, height: 26,

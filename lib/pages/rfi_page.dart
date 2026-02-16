@@ -4,6 +4,7 @@ import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../state/project_providers.dart';
+import '../widgets/crud_dialogs.dart';
 
 class RfiPage extends ConsumerStatefulWidget {
   const RfiPage({super.key});
@@ -72,10 +73,18 @@ class _RfiPageState extends ConsumerState<RfiPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('RFIs', style: AppTheme.heading),
-              const Spacer(),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline, size: 20, color: Tokens.accent),
+                tooltip: 'New RFI',
+                onPressed: () => showAddRfiDialog(context, ref),
+              ),
               _CountChip(
                 label: 'All',
                 count: rfis.length,
@@ -83,7 +92,6 @@ class _RfiPageState extends ConsumerState<RfiPage> {
                 isSelected: _statusFilter == null,
                 onTap: () => _onFilterTap(null),
               ),
-              const SizedBox(width: 8),
               _CountChip(
                 label: 'Open',
                 count: open,
@@ -91,7 +99,6 @@ class _RfiPageState extends ConsumerState<RfiPage> {
                 isSelected: _statusFilter == 'Open',
                 onTap: () => _onFilterTap('Open'),
               ),
-              const SizedBox(width: 8),
               _CountChip(
                 label: 'Pending',
                 count: pending,
@@ -99,7 +106,6 @@ class _RfiPageState extends ConsumerState<RfiPage> {
                 isSelected: _statusFilter == 'Pending',
                 onTap: () => _onFilterTap('Pending'),
               ),
-              const SizedBox(width: 8),
               _CountChip(
                 label: 'Closed',
                 count: closed,
@@ -112,116 +118,141 @@ class _RfiPageState extends ConsumerState<RfiPage> {
           const SizedBox(height: Tokens.spaceLg),
           Expanded(
             child: GlassCard(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        _SortableHeader(
-                          label: 'RFI #',
-                          columnKey: 'number',
-                          width: 80,
-                          currentSort: _sortColumn,
-                          ascending: _sortAsc,
-                          onTap: _onSortTap,
-                        ),
-                        _SortableHeader(
-                          label: 'SUBJECT',
-                          columnKey: 'subject',
-                          flex: 4,
-                          currentSort: _sortColumn,
-                          ascending: _sortAsc,
-                          onTap: _onSortTap,
-                        ),
-                        _SortableHeader(
-                          label: 'ASSIGNEE',
-                          columnKey: 'assignee',
-                          flex: 2,
-                          currentSort: _sortColumn,
-                          ascending: _sortAsc,
-                          onTap: _onSortTap,
-                        ),
-                        _SortableHeader(
-                          label: 'OPENED',
-                          columnKey: 'opened',
-                          width: 90,
-                          currentSort: _sortColumn,
-                          ascending: _sortAsc,
-                          onTap: _onSortTap,
-                        ),
-                        _SortableHeader(
-                          label: 'STATUS',
-                          columnKey: 'status',
-                          width: 70,
-                          currentSort: _sortColumn,
-                          ascending: _sortAsc,
-                          onTap: _onSortTap,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(color: Tokens.glassBorder, height: 1),
-                  Expanded(
-                    child: sorted.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No RFIs match the current filter.',
-                              style: AppTheme.caption.copyWith(color: Tokens.textMuted),
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.only(top: 8),
-                            itemCount: sorted.length,
-                            separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
-                            itemBuilder: (context, i) {
-                              final rfi = sorted[i];
-                              final statusColor = switch (rfi.status) {
-                                'Open' => Tokens.chipYellow,
-                                'Pending' => Tokens.chipBlue,
-                                _ => Tokens.chipGreen,
-                              };
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 80,
-                                      child: Text(rfi.number, style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: Tokens.accent)),
-                                    ),
-                                    Expanded(
-                                      flex: 4,
-                                      child: Text(rfi.subject, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(rfi.assignee ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
-                                    ),
-                                    SizedBox(
-                                      width: 90,
-                                      child: Text(
-                                        '${rfi.dateOpened.month}/${rfi.dateOpened.day}/${rfi.dateOpened.year}',
-                                        style: AppTheme.caption.copyWith(fontSize: 10),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 70,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: statusColor.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(Tokens.radiusSm),
-                                        ),
-                                        child: Text(rfi.status, style: AppTheme.caption.copyWith(fontSize: 10, color: statusColor), textAlign: TextAlign.center),
-                                      ),
-                                    ),
-                                  ],
+              child: LayoutBuilder(
+                builder: (context, outerConstraints) {
+                  final minTableWidth = outerConstraints.maxWidth < 600 ? 600.0 : outerConstraints.maxWidth;
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: minTableWidth,
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                _SortableHeader(
+                                  label: 'RFI #',
+                                  columnKey: 'number',
+                                  width: 80,
+                                  currentSort: _sortColumn,
+                                  ascending: _sortAsc,
+                                  onTap: _onSortTap,
                                 ),
-                              );
-                            },
+                                _SortableHeader(
+                                  label: 'SUBJECT',
+                                  columnKey: 'subject',
+                                  flex: 4,
+                                  currentSort: _sortColumn,
+                                  ascending: _sortAsc,
+                                  onTap: _onSortTap,
+                                ),
+                                _SortableHeader(
+                                  label: 'ASSIGNEE',
+                                  columnKey: 'assignee',
+                                  flex: 2,
+                                  currentSort: _sortColumn,
+                                  ascending: _sortAsc,
+                                  onTap: _onSortTap,
+                                ),
+                                _SortableHeader(
+                                  label: 'OPENED',
+                                  columnKey: 'opened',
+                                  width: 90,
+                                  currentSort: _sortColumn,
+                                  ascending: _sortAsc,
+                                  onTap: _onSortTap,
+                                ),
+                                _SortableHeader(
+                                  label: 'STATUS',
+                                  columnKey: 'status',
+                                  width: 70,
+                                  currentSort: _sortColumn,
+                                  ascending: _sortAsc,
+                                  onTap: _onSortTap,
+                                ),
+                                const SizedBox(width: 50),
+                              ],
+                            ),
                           ),
-                  ),
-                ],
+                          const Divider(color: Tokens.glassBorder, height: 1),
+                          Expanded(
+                            child: sorted.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      'No RFIs match the current filter.',
+                                      style: AppTheme.caption.copyWith(color: Tokens.textMuted),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    itemCount: sorted.length,
+                                    separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
+                                    itemBuilder: (context, i) {
+                                      final rfi = sorted[i];
+                                      final statusColor = switch (rfi.status) {
+                                        'Open' => Tokens.chipYellow,
+                                        'Pending' => Tokens.chipBlue,
+                                        _ => Tokens.chipGreen,
+                                      };
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 80,
+                                              child: Text(rfi.number, style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: Tokens.accent)),
+                                            ),
+                                            Expanded(
+                                              flex: 4,
+                                              child: Text(rfi.subject, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(rfi.assignee ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
+                                            ),
+                                            SizedBox(
+                                              width: 90,
+                                              child: Text(
+                                                '${rfi.dateOpened.month}/${rfi.dateOpened.day}/${rfi.dateOpened.year}',
+                                                style: AppTheme.caption.copyWith(fontSize: 10),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 70,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: statusColor.withValues(alpha: 0.15),
+                                                  borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                                                ),
+                                                child: Text(rfi.status, style: AppTheme.caption.copyWith(fontSize: 10, color: statusColor), textAlign: TextAlign.center),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 50,
+                                              child: Align(
+                                                alignment: Alignment.centerRight,
+                                                child: GestureDetector(
+                                                  onTap: () async {
+                                                    final confirmed = await showDeleteConfirmation(context, rfi.number);
+                                                    if (confirmed) ref.read(rfisProvider.notifier).remove(rfi.id);
+                                                  },
+                                                  child: const Icon(Icons.delete_outline, size: 14, color: Tokens.textMuted),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

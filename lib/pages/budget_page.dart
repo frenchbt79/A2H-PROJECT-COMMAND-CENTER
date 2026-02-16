@@ -25,62 +25,80 @@ class BudgetPage extends ConsumerWidget {
           Text('BUDGET', style: AppTheme.heading),
           const SizedBox(height: Tokens.spaceLg),
           // Summary tiles
-          Row(
-            children: [
-              Expanded(child: _BudgetTile(label: 'Total Budget', value: _fmt(totalBudget), color: Tokens.textPrimary)),
-              const SizedBox(width: 12),
-              Expanded(child: _BudgetTile(label: 'Spent', value: _fmt(totalSpent), color: Tokens.chipRed)),
-              const SizedBox(width: 12),
-              Expanded(child: _BudgetTile(label: 'Committed', value: _fmt(totalCommitted), color: Tokens.chipYellow)),
-              const SizedBox(width: 12),
-              Expanded(child: _BudgetTile(label: 'Remaining', value: _fmt(totalRemaining), color: Tokens.chipGreen)),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tiles = [
+                _BudgetTile(label: 'Total Budget', value: _fmt(totalBudget), color: Tokens.textPrimary),
+                _BudgetTile(label: 'Spent', value: _fmt(totalSpent), color: Tokens.chipRed),
+                _BudgetTile(label: 'Committed', value: _fmt(totalCommitted), color: Tokens.chipYellow),
+                _BudgetTile(label: 'Remaining', value: _fmt(totalRemaining), color: Tokens.chipGreen),
+              ];
+              if (constraints.maxWidth > 600) {
+                return Row(children: tiles.map((t) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: t))).toList());
+              }
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: tiles.map((t) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: t)).toList(),
+              );
+            },
           ),
           const SizedBox(height: Tokens.spaceLg),
           // Table
           Expanded(
             child: GlassCard(
-              child: Column(
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        Expanded(flex: 3, child: Text('CATEGORY', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('BUDGETED', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('SPENT', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('COMMITTED', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('REMAINING', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 3, child: Text('UTILIZATION', style: AppTheme.sidebarGroupLabel)),
-                      ],
+              child: LayoutBuilder(
+                builder: (context, outerConstraints) {
+                  final minTableWidth = outerConstraints.maxWidth < 700 ? 700.0 : outerConstraints.maxWidth;
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: minTableWidth,
+                      child: Column(
+                        children: [
+                          // Header
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                Expanded(flex: 3, child: Text('CATEGORY', style: AppTheme.sidebarGroupLabel)),
+                                Expanded(flex: 2, child: Text('BUDGETED', style: AppTheme.sidebarGroupLabel)),
+                                Expanded(flex: 2, child: Text('SPENT', style: AppTheme.sidebarGroupLabel)),
+                                Expanded(flex: 2, child: Text('COMMITTED', style: AppTheme.sidebarGroupLabel)),
+                                Expanded(flex: 2, child: Text('REMAINING', style: AppTheme.sidebarGroupLabel)),
+                                Expanded(flex: 3, child: Text('UTILIZATION', style: AppTheme.sidebarGroupLabel)),
+                              ],
+                            ),
+                          ),
+                          const Divider(color: Tokens.glassBorder, height: 1),
+                          Expanded(
+                            child: ListView.separated(
+                              padding: const EdgeInsets.only(top: 4),
+                              itemCount: lines.length,
+                              separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
+                              itemBuilder: (context, i) => _BudgetRow(line: lines[i]),
+                            ),
+                          ),
+                          const Divider(color: Tokens.glassBorder, height: 1),
+                          // Totals row
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Row(
+                              children: [
+                                Expanded(flex: 3, child: Text('TOTAL', style: AppTheme.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12))),
+                                Expanded(flex: 2, child: Text(_fmt(totalBudget), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12))),
+                                Expanded(flex: 2, child: Text(_fmt(totalSpent), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipRed))),
+                                Expanded(flex: 2, child: Text(_fmt(totalCommitted), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipYellow))),
+                                Expanded(flex: 2, child: Text(_fmt(totalRemaining), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipGreen))),
+                                Expanded(flex: 3, child: _UtilBar(percent: (totalSpent + totalCommitted) / totalBudget)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const Divider(color: Tokens.glassBorder, height: 1),
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.only(top: 4),
-                      itemCount: lines.length,
-                      separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
-                      itemBuilder: (context, i) => _BudgetRow(line: lines[i]),
-                    ),
-                  ),
-                  const Divider(color: Tokens.glassBorder, height: 1),
-                  // Totals row
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Row(
-                      children: [
-                        Expanded(flex: 3, child: Text('TOTAL', style: AppTheme.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12))),
-                        Expanded(flex: 2, child: Text(_fmt(totalBudget), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12))),
-                        Expanded(flex: 2, child: Text(_fmt(totalSpent), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipRed))),
-                        Expanded(flex: 2, child: Text(_fmt(totalCommitted), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipYellow))),
-                        Expanded(flex: 2, child: Text(_fmt(totalRemaining), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipGreen))),
-                        Expanded(flex: 3, child: _UtilBar(percent: (totalSpent + totalCommitted) / totalBudget)),
-                      ],
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),

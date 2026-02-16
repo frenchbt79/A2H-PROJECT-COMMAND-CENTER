@@ -55,11 +55,12 @@ class _MiniCalendarCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(children: dayLabels.map((d) => Expanded(child: Center(child: Text(d, style: AppTheme.caption.copyWith(fontSize: 10))))).toList()),
                 const SizedBox(height: 4),
-                Expanded(
+                Flexible(
                   child: GridView.count(
                     crossAxisCount: 7,
+                    shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 1.3,
+                    childAspectRatio: 1.2,
                     children: cells.map((d) => Center(
                       child: d == 0 ? const SizedBox.shrink() : Container(
                         width: 22, height: 22,

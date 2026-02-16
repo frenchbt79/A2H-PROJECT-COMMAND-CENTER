@@ -102,7 +102,9 @@ class _ContractPageState extends ConsumerState<ContractPage> {
           ),
           const SizedBox(height: Tokens.spaceMd),
           // Filter chips
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _FilterChipButton(
                 label: 'All',
@@ -110,21 +112,18 @@ class _ContractPageState extends ConsumerState<ContractPage> {
                 selected: _typeFilter == null,
                 onTap: () => setState(() => _typeFilter = null),
               ),
-              const SizedBox(width: 8),
               _FilterChipButton(
                 label: 'Original',
                 color: Tokens.chipGreen,
                 selected: _typeFilter == 'Original',
                 onTap: () => setState(() => _typeFilter = 'Original'),
               ),
-              const SizedBox(width: 8),
               _FilterChipButton(
                 label: 'Amendment',
                 color: Tokens.chipBlue,
                 selected: _typeFilter == 'Amendment',
                 onTap: () => setState(() => _typeFilter = 'Amendment'),
               ),
-              const SizedBox(width: 8),
               _FilterChipButton(
                 label: 'Change Order',
                 color: Tokens.chipYellow,
@@ -190,7 +189,14 @@ class _ContractPageState extends ConsumerState<ContractPage> {
                   ),
                   const Divider(color: Tokens.glassBorder, height: 1),
                   Expanded(
-                    child: ListView.separated(
+                    child: displayed.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No contracts match the current filter.',
+                              style: AppTheme.caption.copyWith(color: Tokens.textMuted),
+                            ),
+                          )
+                        : ListView.separated(
                       padding: const EdgeInsets.only(top: 8),
                       itemCount: displayed.length,
                       separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),

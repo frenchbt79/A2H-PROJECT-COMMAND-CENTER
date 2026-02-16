@@ -22,14 +22,14 @@ class SchedulePage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('SCHEDULE', style: AppTheme.heading),
-              const Spacer(),
               _LegendChip(color: Tokens.chipGreen, label: 'Complete'),
-              const SizedBox(width: 12),
               _LegendChip(color: Tokens.chipBlue, label: 'In Progress'),
-              const SizedBox(width: 12),
               _LegendChip(color: Tokens.textMuted, label: 'Upcoming'),
             ],
           ),
@@ -61,14 +61,22 @@ class SchedulePage extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           // Bottom stats row
-          Row(
-            children: [
-              Expanded(child: _PhaseStatCard(phases: phases, statusFilter: 'Complete', color: Tokens.chipGreen)),
-              const SizedBox(width: 12),
-              Expanded(child: _PhaseStatCard(phases: phases, statusFilter: 'In Progress', color: Tokens.chipBlue)),
-              const SizedBox(width: 12),
-              Expanded(child: _PhaseStatCard(phases: phases, statusFilter: 'Upcoming', color: Tokens.textMuted)),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cards = [
+                _PhaseStatCard(phases: phases, statusFilter: 'Complete', color: Tokens.chipGreen),
+                _PhaseStatCard(phases: phases, statusFilter: 'In Progress', color: Tokens.chipBlue),
+                _PhaseStatCard(phases: phases, statusFilter: 'Upcoming', color: Tokens.textMuted),
+              ];
+              if (constraints.maxWidth > 500) {
+                return Row(children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: c))).toList());
+              }
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: cards.map((c) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: c)).toList(),
+              );
+            },
           ),
         ],
       ),
