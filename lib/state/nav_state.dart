@@ -25,6 +25,7 @@ enum NavRoute {
   mechanical,
   electrical,
   plumbing,
+  fireProtection,
   // DELIVERABLES & MEDIA
   progressPrints,
   signedPrints,
@@ -33,6 +34,8 @@ enum NavRoute {
   // CONSTRUCTION ADMIN
   rfis,
   asis,
+  changeOrders,
+  submittals,
   // Standalone action
   importProjectInformation,
   // Settings
@@ -80,6 +83,8 @@ extension NavRouteLabel on NavRoute {
         return 'Electrical';
       case NavRoute.plumbing:
         return 'Plumbing';
+      case NavRoute.fireProtection:
+        return 'Fire Protection';
       case NavRoute.progressPrints:
         return 'Progress Prints';
       case NavRoute.signedPrints:
@@ -92,6 +97,10 @@ extension NavRouteLabel on NavRoute {
         return 'RFIs';
       case NavRoute.asis:
         return "ASI's";
+      case NavRoute.changeOrders:
+        return 'Change Orders';
+      case NavRoute.submittals:
+        return 'Submittals';
       case NavRoute.importProjectInformation:
         return 'Import Project Information';
       case NavRoute.settings:
@@ -133,6 +142,7 @@ const List<SidebarGroup> sidebarGroups = [
     NavRoute.mechanical,
     NavRoute.electrical,
     NavRoute.plumbing,
+    NavRoute.fireProtection,
   ]),
   SidebarGroup(id: 'deliverables', label: 'DELIVERABLES & MEDIA', items: [
     NavRoute.progressPrints,
@@ -143,6 +153,8 @@ const List<SidebarGroup> sidebarGroups = [
   SidebarGroup(id: 'construction', label: 'CONSTRUCTION ADMIN', items: [
     NavRoute.rfis,
     NavRoute.asis,
+    NavRoute.changeOrders,
+    NavRoute.submittals,
   ]),
 ];
 

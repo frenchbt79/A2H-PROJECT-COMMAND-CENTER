@@ -22,6 +22,8 @@ import 'widgets/global_search.dart';
 import 'widgets/notification_panel.dart';
 import 'pages/settings_page.dart';
 import 'pages/project_map_page.dart';
+import 'pages/change_orders_page.dart';
+import 'pages/submittals_page.dart';
 import 'widgets/info_bar.dart';
 
 class App extends StatelessWidget {
@@ -223,6 +225,7 @@ Widget _buildPage(NavRoute route) {
     NavRoute.mechanical => const DisciplinePage(disciplineName: 'Mechanical', icon: Icons.settings_outlined, accentColor: Color(0xFFFFB74D)),
     NavRoute.electrical => const DisciplinePage(disciplineName: 'Electrical', icon: Icons.bolt_outlined, accentColor: Color(0xFFF06292)),
     NavRoute.plumbing => const DisciplinePage(disciplineName: 'Plumbing', icon: Icons.water_drop_outlined, accentColor: Color(0xFF7986CB)),
+    NavRoute.fireProtection => const DisciplinePage(disciplineName: 'Fire Protection', icon: Icons.local_fire_department_outlined, accentColor: Color(0xFFEF5350)),
     // Deliverables & Media
     NavRoute.progressPrints => const PrintSetsPage(printType: 'Progress', title: 'Progress Prints'),
     NavRoute.signedPrints => const PrintSetsPage(printType: 'Signed/Sealed', title: 'Signed & Sealed Prints'),
@@ -231,6 +234,8 @@ Widget _buildPage(NavRoute route) {
     // Construction Admin
     NavRoute.rfis => const RfiPage(),
     NavRoute.asis => const AsiPage(),
+    NavRoute.changeOrders => const ChangeOrdersPage(),
+    NavRoute.submittals => const SubmittalsPage(),
     // Import (not a real page route — handled by dialog)
     NavRoute.importProjectInformation => const FilesPage(),
     NavRoute.settings => const SettingsPage(),

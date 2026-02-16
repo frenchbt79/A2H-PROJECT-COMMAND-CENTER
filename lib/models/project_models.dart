@@ -306,6 +306,56 @@ class SpaceRequirement {
   double get variancePercent => programmedSF > 0 ? varianceSF / programmedSF : 0;
 }
 
+// ── Change Order ────────────────────────────────────────
+class ChangeOrder {
+  final String id;
+  final String number;
+  final String description;
+  final double amount;
+  final String status; // 'Pending', 'Approved', 'Rejected', 'Void'
+  final DateTime dateSubmitted;
+  final DateTime? dateResolved;
+  final String? initiatedBy;
+  final String? reason; // 'Owner Request', 'Field Condition', 'Design Error', 'Code Requirement', 'Value Engineering'
+
+  const ChangeOrder({
+    required this.id,
+    required this.number,
+    required this.description,
+    required this.amount,
+    required this.status,
+    required this.dateSubmitted,
+    this.dateResolved,
+    this.initiatedBy,
+    this.reason,
+  });
+}
+
+// ── Submittal Item ──────────────────────────────────────
+class SubmittalItem {
+  final String id;
+  final String number;
+  final String title;
+  final String specSection;
+  final String status; // 'Pending', 'Approved', 'Approved as Noted', 'Revise & Resubmit', 'Rejected'
+  final DateTime dateSubmitted;
+  final DateTime? dateReturned;
+  final String? submittedBy;
+  final String? assignedTo;
+
+  const SubmittalItem({
+    required this.id,
+    required this.number,
+    required this.title,
+    required this.specSection,
+    required this.status,
+    required this.dateSubmitted,
+    this.dateReturned,
+    this.submittedBy,
+    this.assignedTo,
+  });
+}
+
 // ── Activity / Notification ─────────────────────────────
 class ActivityItem {
   final String id;

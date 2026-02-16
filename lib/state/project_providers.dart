@@ -166,6 +166,30 @@ final projectInfoProvider = Provider<List<ProjectInfoEntry>>((ref) {
 });
 
 // ═══════════════════════════════════════════════════════════
+// CHANGE ORDERS
+// ═══════════════════════════════════════════════════════════
+
+final changeOrdersProvider = Provider<List<ChangeOrder>>((ref) {
+  final storage = ref.watch(storageServiceProvider);
+  final saved = storage.loadChangeOrders();
+  if (saved.isNotEmpty) return saved;
+  storage.saveChangeOrders(DefaultData.changeOrders);
+  return DefaultData.changeOrders;
+});
+
+// ═══════════════════════════════════════════════════════════
+// SUBMITTALS
+// ═══════════════════════════════════════════════════════════
+
+final submittalsProvider = Provider<List<SubmittalItem>>((ref) {
+  final storage = ref.watch(storageServiceProvider);
+  final saved = storage.loadSubmittals();
+  if (saved.isNotEmpty) return saved;
+  storage.saveSubmittals(DefaultData.submittals);
+  return DefaultData.submittals;
+});
+
+// ═══════════════════════════════════════════════════════════
 // ACTIVITY / NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════
 

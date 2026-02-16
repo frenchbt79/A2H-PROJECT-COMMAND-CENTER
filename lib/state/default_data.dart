@@ -105,6 +105,10 @@ class DefaultData {
     DrawingSheet(id: 'ds19', sheetNumber: 'E-102', title: 'Power Plan Level 1', discipline: 'Electrical', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 2), status: 'Review'),
     DrawingSheet(id: 'ds20', sheetNumber: 'P-001', title: 'Cover Sheet & Fixture Schedule', discipline: 'Plumbing', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 1, 30), status: 'Current'),
     DrawingSheet(id: 'ds21', sheetNumber: 'P-101', title: 'Plumbing Plan Level 1', discipline: 'Plumbing', phase: 'CD', revision: 2, lastRevised: DateTime(2026, 2, 9), status: 'Current'),
+    DrawingSheet(id: 'ds22', sheetNumber: 'FP-001', title: 'Cover Sheet & General Notes', discipline: 'Fire Protection', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 1, 25), status: 'Current'),
+    DrawingSheet(id: 'ds23', sheetNumber: 'FP-101', title: 'Sprinkler Plan Level 1', discipline: 'Fire Protection', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 3), status: 'In Progress'),
+    DrawingSheet(id: 'ds24', sheetNumber: 'FP-102', title: 'Sprinkler Plan Level 2', discipline: 'Fire Protection', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 5), status: 'In Progress'),
+    DrawingSheet(id: 'ds25', sheetNumber: 'FP-201', title: 'Sprinkler Riser Diagram', discipline: 'Fire Protection', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 7), status: 'Review'),
   ];
 
   static final phaseDocuments = <PhaseDocument>[
@@ -181,5 +185,23 @@ class DefaultData {
     ProjectInfoEntry(id: 'pi14', category: 'Site', label: 'Parcel Number', value: '04-2847-0012'),
     ProjectInfoEntry(id: 'pi15', category: 'Site', label: 'Lot Size', value: '2.8 acres (121,968 SF)'),
     ProjectInfoEntry(id: 'pi16', category: 'Site', label: 'Existing Use', value: 'Vacant / Previously C-store'),
+  ];
+
+  static final changeOrders = <ChangeOrder>[
+    ChangeOrder(id: 'co1', number: 'CO-001', description: 'Foundation redesign — additional piers at grid B-4 per geotechnical recommendation', amount: 72000, status: 'Approved', dateSubmitted: DateTime(2025, 12, 15), dateResolved: DateTime(2026, 1, 8), initiatedBy: 'Emily Nguyen', reason: 'Field Condition'),
+    ChangeOrder(id: 'co2', number: 'CO-002', description: 'HVAC value engineering — substitute VAV system for CAV on Levels 2-3', amount: -38000, status: 'Approved', dateSubmitted: DateTime(2026, 1, 10), dateResolved: DateTime(2026, 2, 3), initiatedBy: 'Michael Torres', reason: 'Value Engineering'),
+    ChangeOrder(id: 'co3', number: 'CO-003', description: 'Add emergency generator pad and transfer switch enclosure', amount: 95000, status: 'Pending', dateSubmitted: DateTime(2026, 2, 5), initiatedBy: 'Sarah Chen', reason: 'Owner Request'),
+    ChangeOrder(id: 'co4', number: 'CO-004', description: 'Upgraded lobby finish materials — terrazzo floor and custom wall panels', amount: 128000, status: 'Pending', dateSubmitted: DateTime(2026, 2, 10), initiatedBy: 'Amanda Foster', reason: 'Owner Request'),
+    ChangeOrder(id: 'co5', number: 'CO-005', description: 'Code-required fire separation wall at Level 1 corridor', amount: 18500, status: 'Pending', dateSubmitted: DateTime(2026, 2, 14), initiatedBy: 'James Rivera', reason: 'Code Requirement'),
+  ];
+
+  static final submittals = <SubmittalItem>[
+    SubmittalItem(id: 'sub1', number: 'SUB-001', title: 'Structural Steel Shop Drawings', specSection: '05 12 00', status: 'Approved', dateSubmitted: DateTime(2025, 11, 15), dateReturned: DateTime(2025, 12, 2), submittedBy: 'GC — Turner Construction', assignedTo: 'Emily Nguyen'),
+    SubmittalItem(id: 'sub2', number: 'SUB-002', title: 'Curtain Wall System', specSection: '08 44 13', status: 'Approved as Noted', dateSubmitted: DateTime(2025, 12, 8), dateReturned: DateTime(2026, 1, 5), submittedBy: 'GC — Turner Construction', assignedTo: 'James Rivera'),
+    SubmittalItem(id: 'sub3', number: 'SUB-003', title: 'Roofing Membrane & Insulation', specSection: '07 52 16', status: 'Approved', dateSubmitted: DateTime(2026, 1, 12), dateReturned: DateTime(2026, 1, 28), submittedBy: 'GC — Turner Construction', assignedTo: 'James Rivera'),
+    SubmittalItem(id: 'sub4', number: 'SUB-004', title: 'HVAC Air Handling Units', specSection: '23 73 00', status: 'Revise & Resubmit', dateSubmitted: DateTime(2026, 1, 20), dateReturned: DateTime(2026, 2, 8), submittedBy: 'MEP Sub — AirFlow Systems', assignedTo: 'Michael Torres'),
+    SubmittalItem(id: 'sub5', number: 'SUB-005', title: 'Elevator Equipment', specSection: '14 20 00', status: 'Pending', dateSubmitted: DateTime(2026, 2, 1), submittedBy: 'GC — Turner Construction', assignedTo: 'Sarah Chen'),
+    SubmittalItem(id: 'sub6', number: 'SUB-006', title: 'Fire Sprinkler Shop Drawings', specSection: '21 13 13', status: 'Pending', dateSubmitted: DateTime(2026, 2, 10), submittedBy: 'FP Sub — FireGuard Inc', assignedTo: 'James Rivera'),
+    SubmittalItem(id: 'sub7', number: 'SUB-007', title: 'Interior Stone Finish Samples', specSection: '09 30 00', status: 'Pending', dateSubmitted: DateTime(2026, 2, 14), submittedBy: 'GC — Turner Construction', assignedTo: 'Amanda Foster'),
   ];
 }

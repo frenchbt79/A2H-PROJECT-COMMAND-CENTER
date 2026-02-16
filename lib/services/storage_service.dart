@@ -21,6 +21,8 @@ class StorageService {
   static const _keyAsis = 'pcc_asis';
   static const _keySpaceReqs = 'pcc_space_reqs';
   static const _keyProjectInfo = 'pcc_project_info';
+  static const _keyChangeOrders = 'pcc_change_orders';
+  static const _keySubmittals = 'pcc_submittals';
 
   late final SharedPreferences _prefs;
 
@@ -102,6 +104,14 @@ class StorageService {
   // ── Project Info ────────────────────────────────────────────
   List<ProjectInfoEntry> loadProjectInfo() => _loadList(_keyProjectInfo, _projInfoFromJson);
   Future<void> saveProjectInfo(List<ProjectInfoEntry> items) => _saveList(_keyProjectInfo, items, _projInfoToJson);
+
+  // ── Change Orders ─────────────────────────────────────────
+  List<ChangeOrder> loadChangeOrders() => _loadList(_keyChangeOrders, _changeOrderFromJson);
+  Future<void> saveChangeOrders(List<ChangeOrder> items) => _saveList(_keyChangeOrders, items, _changeOrderToJson);
+
+  // ── Submittals ────────────────────────────────────────────
+  List<SubmittalItem> loadSubmittals() => _loadList(_keySubmittals, _submittalFromJson);
+  Future<void> saveSubmittals(List<SubmittalItem> items) => _saveList(_keySubmittals, items, _submittalToJson);
 
   // ── Clear all data ──────────────────────────────────────────
   Future<void> clearAll() async {
@@ -289,5 +299,37 @@ class StorageService {
   };
   static ProjectInfoEntry _projInfoFromJson(Map<String, dynamic> j) => ProjectInfoEntry(
     id: j['id'], category: j['category'], label: j['label'], value: j['value'],
+  );
+
+  // ── Change Orders ─────────────────────────────────────────
+  static Map<String, dynamic> _changeOrderToJson(ChangeOrder c) => {
+    'id': c.id, 'number': c.number, 'description': c.description,
+    'amount': c.amount, 'status': c.status,
+    'dateSubmitted': c.dateSubmitted.toIso8601String(),
+    'dateResolved': c.dateResolved?.toIso8601String(),
+    'initiatedBy': c.initiatedBy, 'reason': c.reason,
+  };
+  static ChangeOrder _changeOrderFromJson(Map<String, dynamic> j) => ChangeOrder(
+    id: j['id'], number: j['number'], description: j['description'],
+    amount: (j['amount'] as num).toDouble(), status: j['status'],
+    dateSubmitted: DateTime.parse(j['dateSubmitted']),
+    dateResolved: j['dateResolved'] != null ? DateTime.parse(j['dateResolved']) : null,
+    initiatedBy: j['initiatedBy'], reason: j['reason'],
+  );
+
+  // ── Submittals ────────────────────────────────────────────
+  static Map<String, dynamic> _submittalToJson(SubmittalItem s) => {
+    'id': s.id, 'number': s.number, 'title': s.title,
+    'specSection': s.specSection, 'status': s.status,
+    'dateSubmitted': s.dateSubmitted.toIso8601String(),
+    'dateReturned': s.dateReturned?.toIso8601String(),
+    'submittedBy': s.submittedBy, 'assignedTo': s.assignedTo,
+  };
+  static SubmittalItem _submittalFromJson(Map<String, dynamic> j) => SubmittalItem(
+    id: j['id'], number: j['number'], title: j['title'],
+    specSection: j['specSection'], status: j['status'],
+    dateSubmitted: DateTime.parse(j['dateSubmitted']),
+    dateReturned: j['dateReturned'] != null ? DateTime.parse(j['dateReturned']) : null,
+    submittedBy: j['submittedBy'], assignedTo: j['assignedTo'],
   );
 }
