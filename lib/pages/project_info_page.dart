@@ -18,7 +18,6 @@ class ProjectInfoPage extends ConsumerWidget {
     for (final e in entries) {
       grouped.putIfAbsent(e.category, () => []).add(e);
     }
-
     final categories = grouped.keys.toList();
 
     return Padding(
@@ -35,97 +34,78 @@ class ProjectInfoPage extends ConsumerWidget {
           ),
           const SizedBox(height: Tokens.spaceLg),
           Expanded(
-            child: ListView.separated(
-              itemCount: categories.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (context, i) {
-                final category = categories[i];
-                final items = grouped[category]!;
-                return _CategorySection(
-                  category: category,
-                  items: items,
-                  icon: _iconForCategory(category),
-                  color: _colorForCategory(category),
-                );
-              },
-            ),
+            child: LayoutBuilder(builder: (context, constraints) {
+              final crossCount = constraints.maxWidth > 800 ? 2 : 1;
+              return GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossCount,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: crossCount == 2 ? 1.8 : 2.5,
+                ),
+                itemCount: categories.length,
+                itemBuilder: (_, i) => _CategoryCard(
+                  category: categories[i],
+                  entries: grouped[categories[i]]!,
+                ),
+              );
+            }),
           ),
         ],
       ),
     );
   }
+}
 
-  static IconData _iconForCategory(String cat) {
-    return switch (cat) {
+class _CategoryCard extends StatelessWidget {
+  final String category;
+  final List<ProjectInfoEntry> entries;
+  const _CategoryCard({required this.category, required this.entries});
+
+  @override
+  Widget build(BuildContext context) {
+    final categoryIcon = switch (category) {
       'General' => Icons.business_outlined,
       'Codes & Standards' => Icons.gavel_outlined,
       'Zoning' => Icons.map_outlined,
       'Site' => Icons.terrain_outlined,
-      _ => Icons.info_outline,
+      'Contacts' => Icons.people_outlined,
+      _ => Icons.folder_outlined,
     };
-  }
 
-  static Color _colorForCategory(String cat) {
-    return switch (cat) {
-      'General' => Tokens.accent,
-      'Codes & Standards' => Tokens.chipBlue,
-      'Zoning' => Tokens.chipYellow,
-      'Site' => Tokens.chipGreen,
-      _ => Tokens.textSecondary,
-    };
-  }
-}
-
-class _CategorySection extends StatelessWidget {
-  final String category;
-  final List<ProjectInfoEntry> items;
-  final IconData icon;
-  final Color color;
-
-  const _CategorySection({
-    required this.category,
-    required this.items,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: color),
+              Icon(categoryIcon, size: 18, color: Tokens.accent),
               const SizedBox(width: 8),
               Text(
                 category.toUpperCase(),
-                style: AppTheme.sidebarGroupLabel.copyWith(color: color, fontSize: 12, letterSpacing: 1),
+                style: AppTheme.sidebarGroupLabel.copyWith(color: Tokens.accent, letterSpacing: 1.2),
               ),
             ],
           ),
           const SizedBox(height: 12),
           const Divider(color: Tokens.glassBorder, height: 1),
           const SizedBox(height: 8),
-          ...items.map((e) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 180,
-                      child: Text(e.label, style: AppTheme.caption.copyWith(fontSize: 12)),
-                    ),
-                    Expanded(
-                      child: Text(
-                        e.value,
-                        style: AppTheme.body.copyWith(fontSize: 13, color: Tokens.textPrimary),
-                      ),
-                    ),
-                  ],
+          ...entries.map((e) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 140,
+                  child: Text(e.label, style: AppTheme.caption.copyWith(fontSize: 11, color: Tokens.textMuted)),
                 ),
-              )),
+                Expanded(
+                  child: Text(e.value, style: AppTheme.body.copyWith(fontSize: 12)),
+                ),
+              ],
+            ),
+          )),
         ],
       ),
     );
