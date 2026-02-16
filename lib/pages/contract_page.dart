@@ -6,16 +6,76 @@ import '../widgets/glass_card.dart';
 import '../models/project_models.dart';
 import '../state/project_providers.dart';
 
-class ContractPage extends ConsumerWidget {
+class ContractPage extends ConsumerStatefulWidget {
   const ContractPage({super.key});
 
+  static String _fmt(double v) {
+    final neg = v < 0;
+    final abs = v.abs();
+    if (abs >= 1000000) return '${neg ? '-' : ''}\$${(abs / 1000000).toStringAsFixed(2)}M';
+    if (abs >= 1000) return '${neg ? '-' : ''}\$${(abs / 1000).toStringAsFixed(0)}K';
+    return '${neg ? '-' : ''}\$${abs.toStringAsFixed(0)}';
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ContractPage> createState() => _ContractPageState();
+}
+
+class _ContractPageState extends ConsumerState<ContractPage> {
+  String? _typeFilter; // null means "All"
+  String _sortColumn = 'title';
+  bool _sortAsc = true;
+
+  void _onSort(String column) {
+    setState(() {
+      if (_sortColumn == column) {
+        _sortAsc = !_sortAsc;
+      } else {
+        _sortColumn = column;
+        _sortAsc = true;
+      }
+    });
+  }
+
+  List<ContractItem> _applySortAndFilter(List<ContractItem> contracts) {
+    // Filter
+    var result = _typeFilter == null
+        ? List<ContractItem>.from(contracts)
+        : contracts.where((c) => c.type == _typeFilter).toList();
+
+    // Sort
+    result.sort((a, b) {
+      int cmp;
+      switch (_sortColumn) {
+        case 'title':
+          cmp = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        case 'type':
+          cmp = a.type.compareTo(b.type);
+        case 'amount':
+          cmp = a.amount.compareTo(b.amount);
+        case 'status':
+          cmp = a.status.compareTo(b.status);
+        default:
+          cmp = 0;
+      }
+      return _sortAsc ? cmp : -cmp;
+    });
+
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final contracts = ref.watch(contractsProvider);
+
+    // Summary tiles always reflect ALL contracts (unfiltered)
     final totalOriginal = contracts.where((c) => c.type == 'Original').fold(0.0, (s, c) => s + c.amount);
     final totalAmendments = contracts.where((c) => c.type == 'Amendment').fold(0.0, (s, c) => s + c.amount);
     final totalCOs = contracts.where((c) => c.type == 'Change Order').fold(0.0, (s, c) => s + c.amount);
     final grandTotal = totalOriginal + totalAmendments + totalCOs;
+
+    // Apply filter + sort for the table
+    final displayed = _applySortAndFilter(contracts);
 
     return Padding(
       padding: const EdgeInsets.all(Tokens.spaceLg),
@@ -29,10 +89,10 @@ class ContractPage extends ConsumerWidget {
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 600;
               final items = [
-                _SummaryTile(label: 'Original Contract', value: _fmt(totalOriginal), color: Tokens.chipGreen),
-                _SummaryTile(label: 'Amendments', value: _fmt(totalAmendments), color: Tokens.chipBlue),
-                _SummaryTile(label: 'Change Orders', value: _fmt(totalCOs), color: Tokens.chipYellow),
-                _SummaryTile(label: 'Current Value', value: _fmt(grandTotal), color: Tokens.accent),
+                _SummaryTile(label: 'Original Contract', value: ContractPage._fmt(totalOriginal), color: Tokens.chipGreen),
+                _SummaryTile(label: 'Amendments', value: ContractPage._fmt(totalAmendments), color: Tokens.chipBlue),
+                _SummaryTile(label: 'Change Orders', value: ContractPage._fmt(totalCOs), color: Tokens.chipYellow),
+                _SummaryTile(label: 'Current Value', value: ContractPage._fmt(grandTotal), color: Tokens.accent),
               ];
               if (isWide) {
                 return Row(children: items.map((t) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: t))).toList());
@@ -40,22 +100,91 @@ class ContractPage extends ConsumerWidget {
               return Wrap(spacing: 12, runSpacing: 12, children: items.map((t) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: t)).toList());
             },
           ),
-          const SizedBox(height: Tokens.spaceLg),
+          const SizedBox(height: Tokens.spaceMd),
+          // Filter chips
+          Row(
+            children: [
+              _FilterChipButton(
+                label: 'All',
+                color: Tokens.accent,
+                selected: _typeFilter == null,
+                onTap: () => setState(() => _typeFilter = null),
+              ),
+              const SizedBox(width: 8),
+              _FilterChipButton(
+                label: 'Original',
+                color: Tokens.chipGreen,
+                selected: _typeFilter == 'Original',
+                onTap: () => setState(() => _typeFilter = 'Original'),
+              ),
+              const SizedBox(width: 8),
+              _FilterChipButton(
+                label: 'Amendment',
+                color: Tokens.chipBlue,
+                selected: _typeFilter == 'Amendment',
+                onTap: () => setState(() => _typeFilter = 'Amendment'),
+              ),
+              const SizedBox(width: 8),
+              _FilterChipButton(
+                label: 'Change Order',
+                color: Tokens.chipYellow,
+                selected: _typeFilter == 'Change Order',
+                onTap: () => setState(() => _typeFilter = 'Change Order'),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.spaceMd),
           // Contract list
           Expanded(
             child: GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header row
+                  // Header row — tappable for sorting
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
                       children: [
-                        Expanded(flex: 4, child: Text('DESCRIPTION', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('TYPE', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('AMOUNT', style: AppTheme.sidebarGroupLabel.copyWith(height: 1))),
-                        Expanded(flex: 1, child: Text('STATUS', style: AppTheme.sidebarGroupLabel)),
+                        Expanded(
+                          flex: 4,
+                          child: _SortableHeader(
+                            label: 'DESCRIPTION',
+                            columnKey: 'title',
+                            currentSort: _sortColumn,
+                            ascending: _sortAsc,
+                            onTap: () => _onSort('title'),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: _SortableHeader(
+                            label: 'TYPE',
+                            columnKey: 'type',
+                            currentSort: _sortColumn,
+                            ascending: _sortAsc,
+                            onTap: () => _onSort('type'),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: _SortableHeader(
+                            label: 'AMOUNT',
+                            columnKey: 'amount',
+                            currentSort: _sortColumn,
+                            ascending: _sortAsc,
+                            onTap: () => _onSort('amount'),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: _SortableHeader(
+                            label: 'STATUS',
+                            columnKey: 'status',
+                            currentSort: _sortColumn,
+                            ascending: _sortAsc,
+                            onTap: () => _onSort('status'),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -63,9 +192,9 @@ class ContractPage extends ConsumerWidget {
                   Expanded(
                     child: ListView.separated(
                       padding: const EdgeInsets.only(top: 8),
-                      itemCount: contracts.length,
+                      itemCount: displayed.length,
                       separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
-                      itemBuilder: (context, i) => _ContractRow(contract: contracts[i]),
+                      itemBuilder: (context, i) => _ContractRow(contract: displayed[i]),
                     ),
                   ),
                 ],
@@ -76,16 +205,97 @@ class ContractPage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  static String _fmt(double v) {
-    final neg = v < 0;
-    final abs = v.abs();
-    if (abs >= 1000000) return '${neg ? '-' : ''}\$${(abs / 1000000).toStringAsFixed(2)}M';
-    if (abs >= 1000) return '${neg ? '-' : ''}\$${(abs / 1000).toStringAsFixed(0)}K';
-    return '${neg ? '-' : ''}\$${abs.toStringAsFixed(0)}';
+// ── Filter Chip ───────────────────────────────────────────────
+class _FilterChipButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+  const _FilterChipButton({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.25) : color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(Tokens.radiusSm),
+          border: Border.all(
+            color: selected ? color.withValues(alpha: 0.6) : color.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTheme.caption.copyWith(
+            fontSize: 10,
+            color: selected ? color : Tokens.textMuted,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
   }
 }
 
+// ── Sortable Column Header ────────────────────────────────────
+class _SortableHeader extends StatelessWidget {
+  final String label;
+  final String columnKey;
+  final String currentSort;
+  final bool ascending;
+  final VoidCallback onTap;
+  const _SortableHeader({
+    required this.label,
+    required this.columnKey,
+    required this.currentSort,
+    required this.ascending,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = currentSort == columnKey;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: AppTheme.sidebarGroupLabel.copyWith(
+              color: isActive ? Tokens.accent : null,
+            ),
+          ),
+          const SizedBox(width: 4),
+          if (isActive)
+            Icon(
+              ascending ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 12,
+              color: Tokens.accent,
+            )
+          else
+            Icon(
+              Icons.unfold_more,
+              size: 12,
+              color: Tokens.textMuted,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Summary Tile ──────────────────────────────────────────────
 class _SummaryTile extends StatelessWidget {
   final String label;
   final String value;
@@ -108,6 +318,7 @@ class _SummaryTile extends StatelessWidget {
   }
 }
 
+// ── Contract Row ──────────────────────────────────────────────
 class _ContractRow extends StatelessWidget {
   final ContractItem contract;
   const _ContractRow({required this.contract});
@@ -147,6 +358,7 @@ class _ContractRow extends StatelessWidget {
   }
 }
 
+// ── Type Chip ─────────────────────────────────────────────────
 class _TypeChip extends StatelessWidget {
   final String type;
   const _TypeChip({required this.type});
@@ -172,6 +384,7 @@ class _TypeChip extends StatelessWidget {
   }
 }
 
+// ── Status Dot ────────────────────────────────────────────────
 class _StatusDot extends StatelessWidget {
   final String status;
   const _StatusDot({required this.status});

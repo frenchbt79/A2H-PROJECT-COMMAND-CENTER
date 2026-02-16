@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
+import 'services/storage_service.dart';
 
-void main() {
+final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final storage = StorageService();
+  await storage.init();
+
   runApp(
-    const ProviderScope(
-      child: App(),
+    ProviderScope(
+      overrides: [
+        storageServiceProvider.overrideWithValue(storage),
+      ],
+      child: const App(),
     ),
   );
 }

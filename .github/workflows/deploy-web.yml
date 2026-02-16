@@ -27,7 +27,7 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build web --release --base-href "/project-command-center/"
+      - run: flutter build web --release --base-href "/A2H-PROJECT-COMMAND-CENTER/"
 
       - uses: actions/upload-pages-artifact@v3
         with:

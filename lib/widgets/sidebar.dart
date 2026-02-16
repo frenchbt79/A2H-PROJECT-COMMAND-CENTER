@@ -95,13 +95,22 @@ class Sidebar extends ConsumerWidget {
             ),
           ),
 
-          // ── Import action button ─────────────────────
+          // ── Bottom actions ────────────────────────────
           const Divider(color: Tokens.glassBorder, height: 1, indent: 16, endIndent: 16),
           SidebarItem(
             label: NavRoute.importProjectInformation.label,
             icon: Icons.file_upload_outlined,
             isActive: false,
             onTap: () => showImportDialog(context, ref),
+          ),
+          SidebarItem(
+            label: NavRoute.settings.label,
+            icon: Icons.settings_outlined,
+            isActive: navState.selectedRoute == NavRoute.settings,
+            onTap: () {
+              navNotifier.selectPage(NavRoute.settings);
+              onItemSelected?.call();
+            },
           ),
           const SizedBox(height: 12),
         ],

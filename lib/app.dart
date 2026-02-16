@@ -18,6 +18,9 @@ import 'pages/asi_page.dart';
 import 'pages/renderings_page.dart';
 import 'pages/programming_page.dart';
 import 'pages/project_info_page.dart';
+import 'widgets/global_search.dart';
+import 'widgets/notification_panel.dart';
+import 'pages/settings_page.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -95,23 +98,47 @@ class _DesktopLayout extends StatelessWidget {
         const Sidebar(),
         Container(width: 1, color: Tokens.glassBorder),
         Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(0.02, 0), end: Offset.zero).animate(animation),
-                  child: child,
+          child: Column(
+            children: [
+              // Top bar with search + actions
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Row(
+                  children: [
+                    Text(
+                      navState.selectedRoute.label.toUpperCase(),
+                      style: AppTheme.caption.copyWith(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: Tokens.textMuted),
+                    ),
+                    const Spacer(),
+                    const GlobalSearchBar(),
+                    const SizedBox(width: 16),
+                    const NotificationBell(),
+                  ],
                 ),
-              );
-            },
-            child: KeyedSubtree(
-              key: ValueKey(navState.selectedRoute),
-              child: _buildPage(navState.selectedRoute),
-            ),
+              ),
+              Container(height: 1, color: Tokens.glassBorder),
+              // Page content
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(begin: const Offset(0.02, 0), end: Offset.zero).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey(navState.selectedRoute),
+                    child: _buildPage(navState.selectedRoute),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -199,5 +226,6 @@ Widget _buildPage(NavRoute route) {
     NavRoute.asis => const AsiPage(),
     // Import (not a real page route — handled by dialog)
     NavRoute.importProjectInformation => const FilesPage(),
+    NavRoute.settings => const SettingsPage(),
   };
 }

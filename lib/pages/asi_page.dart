@@ -5,14 +5,109 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../state/project_providers.dart';
 
-class AsiPage extends ConsumerWidget {
+class AsiPage extends ConsumerStatefulWidget {
   const AsiPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AsiPage> createState() => _AsiPageState();
+}
+
+class _AsiPageState extends ConsumerState<AsiPage> {
+  String? _statusFilter; // null = "All"
+  String _sortColumn = 'number';
+  bool _sortAsc = true;
+
+  List<dynamic> _applySortAndFilter(List<dynamic> asis) {
+    // Filter
+    var filtered = _statusFilter == null
+        ? List.of(asis)
+        : asis.where((a) => a.status == _statusFilter).toList();
+
+    // Sort
+    filtered.sort((a, b) {
+      int cmp;
+      switch (_sortColumn) {
+        case 'number':
+          cmp = a.number.compareTo(b.number);
+        case 'subject':
+          cmp = a.subject.toLowerCase().compareTo(b.subject.toLowerCase());
+        case 'affectedSheets':
+          cmp = (a.affectedSheets ?? '').compareTo(b.affectedSheets ?? '');
+        case 'issuedBy':
+          cmp = (a.issuedBy ?? '').compareTo(b.issuedBy ?? '');
+        case 'date':
+          cmp = a.dateIssued.compareTo(b.dateIssued);
+        case 'status':
+          cmp = a.status.compareTo(b.status);
+        default:
+          cmp = 0;
+      }
+      return _sortAsc ? cmp : -cmp;
+    });
+
+    return filtered;
+  }
+
+  void _onSort(String column) {
+    setState(() {
+      if (_sortColumn == column) {
+        _sortAsc = !_sortAsc;
+      } else {
+        _sortColumn = column;
+        _sortAsc = true;
+      }
+    });
+  }
+
+  void _onFilterTap(String? status) {
+    setState(() {
+      _statusFilter = status;
+    });
+  }
+
+  Widget _buildSortableHeader(String label, String column, {double? width, int? flex}) {
+    final isActive = _sortColumn == column;
+    final arrow = isActive
+        ? Icon(
+            _sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
+            size: 12,
+            color: Tokens.accent,
+          )
+        : const SizedBox.shrink();
+
+    final content = InkWell(
+      onTap: () => _onSort(column),
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AppTheme.sidebarGroupLabel.copyWith(
+                color: isActive ? Tokens.accent : null,
+              ),
+            ),
+            const SizedBox(width: 4),
+            arrow,
+          ],
+        ),
+      ),
+    );
+
+    if (width != null) {
+      return SizedBox(width: width, child: content);
+    }
+    return Expanded(flex: flex ?? 1, child: content);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final asis = ref.watch(asisProvider);
     final issued = asis.where((a) => a.status == 'Issued').length;
     final draft = asis.where((a) => a.status == 'Draft').length;
+    final displayList = _applySortAndFilter(asis);
 
     return Padding(
       padding: const EdgeInsets.all(Tokens.spaceLg),
@@ -25,9 +120,29 @@ class AsiPage extends ConsumerWidget {
               const SizedBox(width: 10),
               Text("ASI's", style: AppTheme.heading),
               const Spacer(),
-              _CountChip(label: 'Issued', count: issued, color: Tokens.chipGreen),
+              _CountChip(
+                label: 'All',
+                count: asis.length,
+                color: Tokens.chipBlue,
+                isSelected: _statusFilter == null,
+                onTap: () => _onFilterTap(null),
+              ),
               const SizedBox(width: 8),
-              _CountChip(label: 'Draft', count: draft, color: Tokens.chipYellow),
+              _CountChip(
+                label: 'Issued',
+                count: issued,
+                color: Tokens.chipGreen,
+                isSelected: _statusFilter == 'Issued',
+                onTap: () => _onFilterTap('Issued'),
+              ),
+              const SizedBox(width: 8),
+              _CountChip(
+                label: 'Draft',
+                count: draft,
+                color: Tokens.chipYellow,
+                isSelected: _statusFilter == 'Draft',
+                onTap: () => _onFilterTap('Draft'),
+              ),
             ],
           ),
           const SizedBox(height: Tokens.spaceLg),
@@ -39,12 +154,12 @@ class AsiPage extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
                       children: [
-                        SizedBox(width: 80, child: Text('ASI #', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 4, child: Text('SUBJECT', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('AFFECTED SHEETS', style: AppTheme.sidebarGroupLabel)),
-                        Expanded(flex: 2, child: Text('ISSUED BY', style: AppTheme.sidebarGroupLabel)),
-                        SizedBox(width: 90, child: Text('DATE', style: AppTheme.sidebarGroupLabel)),
-                        SizedBox(width: 70, child: Text('STATUS', style: AppTheme.sidebarGroupLabel)),
+                        _buildSortableHeader('ASI #', 'number', width: 80),
+                        _buildSortableHeader('SUBJECT', 'subject', flex: 4),
+                        _buildSortableHeader('AFFECTED SHEETS', 'affectedSheets', flex: 2),
+                        _buildSortableHeader('ISSUED BY', 'issuedBy', flex: 2),
+                        _buildSortableHeader('DATE', 'date', width: 90),
+                        _buildSortableHeader('STATUS', 'status', width: 70),
                       ],
                     ),
                   ),
@@ -52,10 +167,10 @@ class AsiPage extends ConsumerWidget {
                   Expanded(
                     child: ListView.separated(
                       padding: const EdgeInsets.only(top: 8),
-                      itemCount: asis.length,
+                      itemCount: displayList.length,
                       separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
                       itemBuilder: (context, i) {
-                        final asi = asis[i];
+                        final asi = displayList[i];
                         final statusColor = switch (asi.status) {
                           'Issued' => Tokens.chipGreen,
                           'Draft' => Tokens.chipYellow,
@@ -78,11 +193,11 @@ class AsiPage extends ConsumerWidget {
                               ),
                               Expanded(
                                 flex: 2,
-                                child: Text(asi.affectedSheets ?? '—', style: AppTheme.caption.copyWith(fontSize: 11)),
+                                child: Text(asi.affectedSheets ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
                               ),
                               Expanded(
                                 flex: 2,
-                                child: Text(asi.issuedBy ?? '—', style: AppTheme.caption.copyWith(fontSize: 11)),
+                                child: Text(asi.issuedBy ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
                               ),
                               SizedBox(
                                 width: 90,
@@ -126,24 +241,39 @@ class _CountChip extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
-  const _CountChip({required this.label, required this.count, required this.color});
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CountChip({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(Tokens.radiusSm),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('$count', style: AppTheme.body.copyWith(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
-          const SizedBox(width: 4),
-          Text(label, style: AppTheme.caption.copyWith(fontSize: 10, color: color)),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.3) : color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(Tokens.radiusSm),
+          border: Border.all(
+            color: isSelected ? color.withValues(alpha: 0.7) : color.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('$count', style: AppTheme.body.copyWith(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+            const SizedBox(width: 4),
+            Text(label, style: AppTheme.caption.copyWith(fontSize: 10, color: color)),
+          ],
+        ),
       ),
     );
   }

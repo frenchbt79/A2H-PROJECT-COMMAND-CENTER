@@ -306,6 +306,34 @@ class SpaceRequirement {
   double get variancePercent => programmedSF > 0 ? varianceSF / programmedSF : 0;
 }
 
+// ── Activity / Notification ─────────────────────────────
+class ActivityItem {
+  final String id;
+  final String title;
+  final String description;
+  final DateTime timestamp;
+  final String category; // 'rfi', 'asi', 'schedule', 'budget', 'document', 'team', 'todo'
+  final bool isRead;
+
+  const ActivityItem({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.timestamp,
+    required this.category,
+    this.isRead = false,
+  });
+
+  ActivityItem copyWith({bool? isRead}) => ActivityItem(
+    id: id,
+    title: title,
+    description: description,
+    timestamp: timestamp,
+    category: category,
+    isRead: isRead ?? this.isRead,
+  );
+}
+
 // ── Project Info Entry ───────────────────────────────────
 class ProjectInfoEntry {
   final String id;

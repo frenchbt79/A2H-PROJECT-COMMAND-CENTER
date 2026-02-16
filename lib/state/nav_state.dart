@@ -33,6 +33,8 @@ enum NavRoute {
   asis,
   // Standalone action
   importProjectInformation,
+  // Settings
+  settings,
 }
 
 extension NavRouteLabel on NavRoute {
@@ -86,6 +88,8 @@ extension NavRouteLabel on NavRoute {
         return "ASI's";
       case NavRoute.importProjectInformation:
         return 'Import Project Information';
+      case NavRoute.settings:
+        return 'Settings';
     }
   }
 }
