@@ -118,6 +118,147 @@ final deadlinesProvider = Provider<List<Deadline>>((ref) => [
 // ═══════════════════════════════════════════════════════════
 // RFIs
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// DRAWING SHEETS
+// ═══════════════════════════════════════════════════════════
+final drawingSheetsProvider = Provider<List<DrawingSheet>>((ref) => [
+  // Architectural
+  DrawingSheet(id: 'ds1', sheetNumber: 'A-001', title: 'Cover Sheet & Drawing Index', discipline: 'Architectural', phase: 'CD', revision: 2, lastRevised: DateTime(2026, 2, 10), status: 'Current'),
+  DrawingSheet(id: 'ds2', sheetNumber: 'A-101', title: 'First Floor Plan', discipline: 'Architectural', phase: 'CD', revision: 3, lastRevised: DateTime(2026, 2, 14), status: 'Current'),
+  DrawingSheet(id: 'ds3', sheetNumber: 'A-102', title: 'Second Floor Plan', discipline: 'Architectural', phase: 'CD', revision: 2, lastRevised: DateTime(2026, 2, 12), status: 'In Progress'),
+  DrawingSheet(id: 'ds4', sheetNumber: 'A-201', title: 'Exterior Elevations', discipline: 'Architectural', phase: 'DD', revision: 4, lastRevised: DateTime(2026, 1, 28), status: 'Current'),
+  DrawingSheet(id: 'ds5', sheetNumber: 'A-301', title: 'Building Sections', discipline: 'Architectural', phase: 'DD', revision: 2, lastRevised: DateTime(2026, 1, 15), status: 'Current'),
+  DrawingSheet(id: 'ds6', sheetNumber: 'A-501', title: 'Wall Sections & Details', discipline: 'Architectural', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 8), status: 'In Progress'),
+  // Civil
+  DrawingSheet(id: 'ds7', sheetNumber: 'C-001', title: 'Cover Sheet', discipline: 'Civil', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 1, 20), status: 'Current'),
+  DrawingSheet(id: 'ds8', sheetNumber: 'C-101', title: 'Grading & Drainage Plan', discipline: 'Civil', phase: 'CD', revision: 2, lastRevised: DateTime(2026, 2, 5), status: 'Current'),
+  DrawingSheet(id: 'ds9', sheetNumber: 'C-102', title: 'Utility Plan', discipline: 'Civil', phase: 'DD', revision: 3, lastRevised: DateTime(2026, 1, 18), status: 'Current'),
+  DrawingSheet(id: 'ds10', sheetNumber: 'C-103', title: 'Erosion Control Plan', discipline: 'Civil', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 1), status: 'Review'),
+  // Landscape
+  DrawingSheet(id: 'ds11', sheetNumber: 'L-001', title: 'Cover Sheet', discipline: 'Landscape', phase: 'DD', revision: 1, lastRevised: DateTime(2025, 12, 15), status: 'Current'),
+  DrawingSheet(id: 'ds12', sheetNumber: 'L-101', title: 'Landscape Plan', discipline: 'Landscape', phase: 'DD', revision: 2, lastRevised: DateTime(2026, 1, 22), status: 'Current'),
+  DrawingSheet(id: 'ds13', sheetNumber: 'L-102', title: 'Irrigation Plan', discipline: 'Landscape', phase: 'DD', revision: 1, lastRevised: DateTime(2026, 1, 10), status: 'In Progress'),
+  // Mechanical
+  DrawingSheet(id: 'ds14', sheetNumber: 'M-001', title: 'Cover Sheet & Schedules', discipline: 'Mechanical', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 1, 25), status: 'Current'),
+  DrawingSheet(id: 'ds15', sheetNumber: 'M-101', title: 'HVAC Floor Plan Level 1', discipline: 'Mechanical', phase: 'CD', revision: 2, lastRevised: DateTime(2026, 2, 8), status: 'Current'),
+  DrawingSheet(id: 'ds16', sheetNumber: 'M-201', title: 'Ductwork Details', discipline: 'Mechanical', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 3), status: 'In Progress'),
+  // Electrical
+  DrawingSheet(id: 'ds17', sheetNumber: 'E-001', title: 'Cover Sheet & Panel Schedules', discipline: 'Electrical', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 1, 28), status: 'Current'),
+  DrawingSheet(id: 'ds18', sheetNumber: 'E-101', title: 'Lighting Plan Level 1', discipline: 'Electrical', phase: 'CD', revision: 2, lastRevised: DateTime(2026, 2, 6), status: 'Current'),
+  DrawingSheet(id: 'ds19', sheetNumber: 'E-102', title: 'Power Plan Level 1', discipline: 'Electrical', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 2, 2), status: 'Review'),
+  // Plumbing
+  DrawingSheet(id: 'ds20', sheetNumber: 'P-001', title: 'Cover Sheet & Fixture Schedule', discipline: 'Plumbing', phase: 'CD', revision: 1, lastRevised: DateTime(2026, 1, 30), status: 'Current'),
+  DrawingSheet(id: 'ds21', sheetNumber: 'P-101', title: 'Plumbing Plan Level 1', discipline: 'Plumbing', phase: 'CD', revision: 2, lastRevised: DateTime(2026, 2, 9), status: 'Current'),
+]);
+
+// ═══════════════════════════════════════════════════════════
+// PHASE DOCUMENTS
+// ═══════════════════════════════════════════════════════════
+class PhaseDocumentsNotifier extends StateNotifier<List<PhaseDocument>> {
+  PhaseDocumentsNotifier() : super([
+    PhaseDocument(id: 'pd1', name: 'SD_Package_Narrative.pdf', phase: 'SD', docType: 'Report', source: 'Architect', sizeBytes: 2400000, modified: DateTime(2025, 7, 10), status: 'Current', revision: 2),
+    PhaseDocument(id: 'pd2', name: 'SD_Floor_Plans.pdf', phase: 'SD', docType: 'Drawing', source: 'Architect', sizeBytes: 8100000, modified: DateTime(2025, 7, 8), status: 'Current', revision: 3),
+    PhaseDocument(id: 'pd3', name: 'DD_Specifications_Outline.pdf', phase: 'DD', docType: 'Specification', source: 'Architect', sizeBytes: 3200000, modified: DateTime(2025, 11, 20), status: 'Current', revision: 1),
+    PhaseDocument(id: 'pd4', name: 'DD_MEP_Coordination_Report.pdf', phase: 'DD', discipline: 'MEP', docType: 'Report', source: 'Consultant', sizeBytes: 1800000, modified: DateTime(2025, 11, 15), status: 'Current', revision: 1),
+    PhaseDocument(id: 'pd5', name: 'CD_Arch_Set_50pct.pdf', phase: 'CD', discipline: 'Architectural', docType: 'Drawing', source: 'Architect', sizeBytes: 24500000, modified: DateTime(2026, 1, 30), status: 'Under Review', revision: 1),
+    PhaseDocument(id: 'pd6', name: 'CD_Structural_Calcs.pdf', phase: 'CD', discipline: 'Structural', docType: 'Report', source: 'Consultant', sizeBytes: 5600000, modified: DateTime(2026, 2, 5), status: 'Draft', revision: 0),
+    PhaseDocument(id: 'pd7', name: 'CD_Spec_Div_08_Openings.pdf', phase: 'CD', docType: 'Specification', source: 'Architect', sizeBytes: 980000, modified: DateTime(2026, 2, 10), status: 'Current', revision: 2),
+    // Client-sourced
+    PhaseDocument(id: 'pd8', name: 'Geotechnical_Report.pdf', phase: '', docType: 'Report', source: 'Client', sizeBytes: 12300000, modified: DateTime(2025, 2, 20), status: 'Current', revision: 0),
+    PhaseDocument(id: 'pd9', name: 'Existing_As_Builts.pdf', phase: '', docType: 'Drawing', source: 'Client', sizeBytes: 18700000, modified: DateTime(2025, 1, 15), status: 'Current', revision: 0),
+    PhaseDocument(id: 'pd10', name: 'Owner_Programming_Requirements.pdf', phase: '', docType: 'Report', source: 'Client', sizeBytes: 3100000, modified: DateTime(2025, 1, 10), status: 'Current', revision: 1),
+    PhaseDocument(id: 'pd11', name: 'Survey_Boundary_Topo.pdf', phase: '', docType: 'Report', source: 'Client', sizeBytes: 9800000, modified: DateTime(2025, 2, 5), status: 'Current', revision: 0),
+    PhaseDocument(id: 'pd12', name: 'Environmental_Phase1.pdf', phase: '', docType: 'Report', source: 'Client', sizeBytes: 4200000, modified: DateTime(2025, 3, 1), status: 'Current', revision: 0),
+    // Photos
+    PhaseDocument(id: 'pd13', name: 'Site_Photo_North_Elevation.jpg', phase: '', docType: 'Submittal', source: 'Architect', sizeBytes: 5400000, modified: DateTime(2025, 4, 12), status: 'Current'),
+    PhaseDocument(id: 'pd14', name: 'Site_Photo_South_View.jpg', phase: '', docType: 'Submittal', source: 'Architect', sizeBytes: 4800000, modified: DateTime(2025, 4, 12), status: 'Current'),
+    PhaseDocument(id: 'pd15', name: 'Existing_Interior_Lobby.png', phase: '', docType: 'Submittal', source: 'Client', sizeBytes: 3200000, modified: DateTime(2025, 3, 18), status: 'Current'),
+    PhaseDocument(id: 'pd16', name: 'Material_Mockup_Facade.jpg', phase: 'DD', docType: 'Submittal', source: 'Architect', sizeBytes: 6100000, modified: DateTime(2025, 10, 5), status: 'Current'),
+    PhaseDocument(id: 'pd17', name: 'Construction_Progress_Jan.png', phase: '', docType: 'Submittal', source: 'Contractor', sizeBytes: 7200000, modified: DateTime(2026, 1, 31), status: 'Current'),
+  ]);
+
+  void addDocument(PhaseDocument doc) {
+    state = [doc, ...state];
+  }
+}
+
+final phaseDocumentsProvider = StateNotifierProvider<PhaseDocumentsNotifier, List<PhaseDocument>>((ref) => PhaseDocumentsNotifier());
+
+// ═══════════════════════════════════════════════════════════
+// PRINT SETS
+// ═══════════════════════════════════════════════════════════
+final printSetsProvider = Provider<List<PrintSet>>((ref) => [
+  PrintSet(id: 'ps1', title: '50% DD Set', type: 'Progress', date: DateTime(2025, 9, 15), sheetCount: 42, distributedTo: 'Owner, MEP Consultant', status: 'Distributed'),
+  PrintSet(id: 'ps2', title: '100% DD Set', type: 'Progress', date: DateTime(2025, 11, 30), sheetCount: 68, distributedTo: 'Owner, All Consultants', status: 'Distributed'),
+  PrintSet(id: 'ps3', title: '50% CD Set', type: 'Progress', date: DateTime(2026, 1, 28), sheetCount: 85, distributedTo: 'Owner, All Consultants, Contractor', status: 'Distributed'),
+  PrintSet(id: 'ps4', title: 'SD Package — Sealed', type: 'Signed/Sealed', date: DateTime(2025, 7, 15), sheetCount: 24, distributedTo: 'Owner, City Planning', status: 'Distributed', sealedBy: 'James Rivera, RA'),
+  PrintSet(id: 'ps5', title: 'DD Package — Sealed', type: 'Signed/Sealed', date: DateTime(2025, 12, 1), sheetCount: 68, distributedTo: 'Owner, Building Department', status: 'Distributed', sealedBy: 'James Rivera, RA'),
+  PrintSet(id: 'ps6', title: 'Foundation Package — Sealed', type: 'Signed/Sealed', date: DateTime(2026, 2, 10), sheetCount: 18, distributedTo: 'Contractor, Building Dept', status: 'Pending', sealedBy: 'Emily Nguyen, PE'),
+]);
+
+// ═══════════════════════════════════════════════════════════
+// RENDERINGS
+// ═══════════════════════════════════════════════════════════
+final renderingsProvider = Provider<List<RenderingItem>>((ref) => [
+  RenderingItem(id: 'rn1', title: 'Main Entry — Daytime', viewType: 'Exterior', created: DateTime(2025, 10, 15), status: 'Final', sizeBytes: 18500000, placeholderColor: const Color(0xFF1B4F72)),
+  RenderingItem(id: 'rn2', title: 'Main Entry — Night', viewType: 'Exterior', created: DateTime(2025, 10, 20), status: 'Final', sizeBytes: 16200000, placeholderColor: const Color(0xFF0D2137)),
+  RenderingItem(id: 'rn3', title: 'Aerial View — Northwest', viewType: 'Aerial', created: DateTime(2025, 11, 5), status: 'Client Review', sizeBytes: 22100000, placeholderColor: const Color(0xFF2E5A3A)),
+  RenderingItem(id: 'rn4', title: 'Lobby Interior', viewType: 'Interior', created: DateTime(2026, 1, 12), status: 'Draft', sizeBytes: 14800000, placeholderColor: const Color(0xFF4A3728)),
+  RenderingItem(id: 'rn5', title: 'Courtyard Detail', viewType: 'Detail', created: DateTime(2026, 2, 1), status: 'In Progress', sizeBytes: 8400000, placeholderColor: const Color(0xFF2C3E50)),
+]);
+
+// ═══════════════════════════════════════════════════════════
+// ASIs
+// ═══════════════════════════════════════════════════════════
+final asisProvider = Provider<List<AsiItem>>((ref) => [
+  AsiItem(id: 'a1', number: 'ASI-001', subject: 'Revised lobby floor finish — change from porcelain to terrazzo', status: 'Issued', dateIssued: DateTime(2025, 12, 5), affectedSheets: 'A-101, A-501', issuedBy: 'James Rivera'),
+  AsiItem(id: 'a2', number: 'ASI-002', subject: 'Add roof access hatch at grid D-6', status: 'Issued', dateIssued: DateTime(2026, 1, 10), affectedSheets: 'A-102, S-201', issuedBy: 'James Rivera'),
+  AsiItem(id: 'a3', number: 'ASI-003', subject: 'Relocate electrical panel EP-2 per field condition', status: 'Issued', dateIssued: DateTime(2026, 1, 28), affectedSheets: 'E-101, E-102', issuedBy: 'Sarah Chen'),
+  AsiItem(id: 'a4', number: 'ASI-004', subject: 'Revised grading at south parking area', status: 'Draft', dateIssued: DateTime(2026, 2, 12), affectedSheets: 'C-101, L-101', issuedBy: 'David Park'),
+]);
+
+// ═══════════════════════════════════════════════════════════
+// SPACE REQUIREMENTS (Programming)
+// ═══════════════════════════════════════════════════════════
+final spaceRequirementsProvider = Provider<List<SpaceRequirement>>((ref) => [
+  SpaceRequirement(id: 'sp1', roomName: 'Main Lobby', department: 'Public', programmedSF: 2400, designedSF: 2550, adjacency: 'Reception, Elevator Core', notes: 'Double-height ceiling required'),
+  SpaceRequirement(id: 'sp2', roomName: 'Conference Room A', department: 'Admin', programmedSF: 600, designedSF: 580, adjacency: 'Executive Suite, Break Room'),
+  SpaceRequirement(id: 'sp3', roomName: 'Conference Room B', department: 'Admin', programmedSF: 400, designedSF: 420, adjacency: 'Open Office'),
+  SpaceRequirement(id: 'sp4', roomName: 'Open Office', department: 'Operations', programmedSF: 4800, designedSF: 4650, adjacency: 'Break Room, Restrooms', notes: '48 workstations minimum'),
+  SpaceRequirement(id: 'sp5', roomName: 'Executive Suite', department: 'Admin', programmedSF: 1200, designedSF: 1180, adjacency: 'Conference Room A, Reception'),
+  SpaceRequirement(id: 'sp6', roomName: 'Break Room / Kitchen', department: 'Support', programmedSF: 800, designedSF: 850, adjacency: 'Open Office, Restrooms'),
+  SpaceRequirement(id: 'sp7', roomName: 'Server Room', department: 'IT', programmedSF: 300, designedSF: 320, adjacency: 'Electrical Room', notes: 'Dedicated HVAC, raised floor'),
+  SpaceRequirement(id: 'sp8', roomName: 'Loading Dock', department: 'Service', programmedSF: 600, designedSF: 600, adjacency: 'Storage, Service Corridor'),
+  SpaceRequirement(id: 'sp9', roomName: 'Restrooms (per floor)', department: 'Support', programmedSF: 500, designedSF: 520, adjacency: 'Break Room, Open Office', notes: 'ADA compliant'),
+  SpaceRequirement(id: 'sp10', roomName: 'Storage / Janitor', department: 'Service', programmedSF: 200, designedSF: 180, adjacency: 'Loading Dock'),
+]);
+
+// ═══════════════════════════════════════════════════════════
+// PROJECT INFORMATION
+// ═══════════════════════════════════════════════════════════
+final projectInfoProvider = Provider<List<ProjectInfoEntry>>((ref) => [
+  // General
+  ProjectInfoEntry(id: 'pi1', category: 'General', label: 'Project Name', value: 'Northstar Office Complex'),
+  ProjectInfoEntry(id: 'pi2', category: 'General', label: 'Project Number', value: '2025-0847'),
+  ProjectInfoEntry(id: 'pi3', category: 'General', label: 'Project Address', value: '1200 Commerce Blvd, Austin, TX 78701'),
+  ProjectInfoEntry(id: 'pi4', category: 'General', label: 'Client', value: 'Northstar Development LLC'),
+  ProjectInfoEntry(id: 'pi5', category: 'General', label: 'Architect of Record', value: 'Meridian Architecture'),
+  // Codes & Standards
+  ProjectInfoEntry(id: 'pi6', category: 'Codes & Standards', label: 'Building Code', value: 'IBC 2021'),
+  ProjectInfoEntry(id: 'pi7', category: 'Codes & Standards', label: 'Energy Code', value: 'ASHRAE 90.1-2019'),
+  ProjectInfoEntry(id: 'pi8', category: 'Codes & Standards', label: 'Fire Code', value: 'IFC 2021'),
+  ProjectInfoEntry(id: 'pi9', category: 'Codes & Standards', label: 'Accessibility', value: 'ADA / TAS 2012'),
+  // Zoning
+  ProjectInfoEntry(id: 'pi10', category: 'Zoning', label: 'Zoning Classification', value: 'C-2 Commercial'),
+  ProjectInfoEntry(id: 'pi11', category: 'Zoning', label: 'FAR (Allowed / Designed)', value: '3.0 / 2.4'),
+  ProjectInfoEntry(id: 'pi12', category: 'Zoning', label: 'Max Height', value: '85 ft (6 stories)'),
+  ProjectInfoEntry(id: 'pi13', category: 'Zoning', label: 'Setbacks (F/S/R)', value: "15' / 10' / 20'"),
+  // Site
+  ProjectInfoEntry(id: 'pi14', category: 'Site', label: 'Parcel Number', value: '04-2847-0012'),
+  ProjectInfoEntry(id: 'pi15', category: 'Site', label: 'Lot Size', value: '2.8 acres (121,968 SF)'),
+  ProjectInfoEntry(id: 'pi16', category: 'Site', label: 'Existing Use', value: 'Vacant / Previously C-store'),
+]);
+
 final rfisProvider = Provider<List<RfiItem>>((ref) => [
   RfiItem(id: 'r1', number: 'RFI-001', subject: 'Foundation footing depth at grid B-4', status: 'Closed', dateOpened: DateTime(2025, 11, 3), dateClosed: DateTime(2025, 11, 18), assignee: 'Emily Nguyen'),
   RfiItem(id: 'r2', number: 'RFI-002', subject: 'Exterior cladding material substitution', status: 'Closed', dateOpened: DateTime(2025, 12, 1), dateClosed: DateTime(2025, 12, 20), assignee: 'James Rivera'),

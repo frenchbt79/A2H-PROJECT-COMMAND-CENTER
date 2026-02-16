@@ -159,3 +159,164 @@ class RfiItem {
     this.assignee,
   });
 }
+
+// ── Drawing Sheet ────────────────────────────────────────
+class DrawingSheet {
+  final String id;
+  final String sheetNumber;
+  final String title;
+  final String discipline;
+  final String phase; // 'SD', 'DD', 'CD'
+  final int revision;
+  final DateTime lastRevised;
+  final String status; // 'Current', 'Superseded', 'In Progress', 'Review'
+
+  const DrawingSheet({
+    required this.id,
+    required this.sheetNumber,
+    required this.title,
+    required this.discipline,
+    required this.phase,
+    required this.revision,
+    required this.lastRevised,
+    required this.status,
+  });
+}
+
+// ── Phase Document ───────────────────────────────────────
+class PhaseDocument {
+  final String id;
+  final String name;
+  final String phase; // 'SD', 'DD', 'CD', ''
+  final String discipline;
+  final String docType; // 'Drawing', 'Specification', 'Report', 'Submittal', 'Correspondence'
+  final String source; // 'Architect', 'Client', 'Consultant', 'Contractor'
+  final int sizeBytes;
+  final DateTime modified;
+  final String status; // 'Current', 'Superseded', 'Draft', 'Under Review'
+  final int revision;
+
+  const PhaseDocument({
+    required this.id,
+    required this.name,
+    required this.phase,
+    this.discipline = '',
+    required this.docType,
+    required this.source,
+    required this.sizeBytes,
+    required this.modified,
+    required this.status,
+    this.revision = 0,
+  });
+
+  String get sizeLabel {
+    if (sizeBytes > 1024 * 1024) {
+      return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(sizeBytes / 1024).toStringAsFixed(0)} KB';
+  }
+}
+
+// ── Print Set ────────────────────────────────────────────
+class PrintSet {
+  final String id;
+  final String title;
+  final String type; // 'Progress', 'Signed/Sealed'
+  final DateTime date;
+  final int sheetCount;
+  final String distributedTo;
+  final String status; // 'Distributed', 'Pending', 'Archived'
+  final String? sealedBy;
+
+  const PrintSet({
+    required this.id,
+    required this.title,
+    required this.type,
+    required this.date,
+    required this.sheetCount,
+    required this.distributedTo,
+    required this.status,
+    this.sealedBy,
+  });
+}
+
+// ── Rendering Item ───────────────────────────────────────
+class RenderingItem {
+  final String id;
+  final String title;
+  final String viewType; // 'Exterior', 'Interior', 'Aerial', 'Detail'
+  final DateTime created;
+  final String status; // 'Final', 'Draft', 'In Progress', 'Client Review'
+  final int sizeBytes;
+  final Color placeholderColor;
+
+  const RenderingItem({
+    required this.id,
+    required this.title,
+    required this.viewType,
+    required this.created,
+    required this.status,
+    required this.sizeBytes,
+    this.placeholderColor = const Color(0xFF2A3A5C),
+  });
+}
+
+// ── ASI Item ─────────────────────────────────────────────
+class AsiItem {
+  final String id;
+  final String number;
+  final String subject;
+  final String status; // 'Issued', 'Draft', 'Void'
+  final DateTime dateIssued;
+  final String? affectedSheets;
+  final String? issuedBy;
+
+  const AsiItem({
+    required this.id,
+    required this.number,
+    required this.subject,
+    required this.status,
+    required this.dateIssued,
+    this.affectedSheets,
+    this.issuedBy,
+  });
+}
+
+// ── Space Requirement ────────────────────────────────────
+class SpaceRequirement {
+  final String id;
+  final String roomName;
+  final String department;
+  final int programmedSF;
+  final int designedSF;
+  final String adjacency;
+  final String notes;
+
+  const SpaceRequirement({
+    required this.id,
+    required this.roomName,
+    required this.department,
+    required this.programmedSF,
+    required this.designedSF,
+    this.adjacency = '',
+    this.notes = '',
+  });
+
+  int get varianceSF => designedSF - programmedSF;
+  double get variancePercent => programmedSF > 0 ? varianceSF / programmedSF : 0;
+}
+
+// ── Project Info Entry ───────────────────────────────────
+class ProjectInfoEntry {
+  final String id;
+  final String category; // 'General', 'Codes & Standards', 'Zoning', 'Contacts', 'Site'
+  final String label;
+  final String value;
+
+  const ProjectInfoEntry({
+    required this.id,
+    required this.category,
+    required this.label,
+    required this.value,
+  });
+}

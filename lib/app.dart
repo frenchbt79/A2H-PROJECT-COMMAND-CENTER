@@ -5,13 +5,19 @@ import 'theme/app_theme.dart';
 import 'state/nav_state.dart';
 import 'widgets/sidebar.dart';
 import 'pages/dashboard_page.dart';
-import 'pages/placeholder_page.dart';
 import 'pages/team_page.dart';
 import 'pages/contract_page.dart';
 import 'pages/schedule_page.dart';
 import 'pages/budget_page.dart';
 import 'pages/rfi_page.dart';
 import 'pages/files_page.dart';
+import 'pages/document_registry_page.dart';
+import 'pages/discipline_page.dart';
+import 'pages/print_sets_page.dart';
+import 'pages/asi_page.dart';
+import 'pages/renderings_page.dart';
+import 'pages/programming_page.dart';
+import 'pages/project_info_page.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -157,19 +163,41 @@ class _MobileLayout extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PAGE BUILDER — routes to real pages
+// PAGE BUILDER — all 24 routes wired to real pages
 // ═══════════════════════════════════════════════════════════
 Widget _buildPage(NavRoute route) {
   return switch (route) {
+    // Dashboard
     NavRoute.dashboard => const DashboardPage(),
+    // Project Admin
     NavRoute.projectTeam => const TeamPage(),
     NavRoute.contract => const ContractPage(),
     NavRoute.schedule => const SchedulePage(),
     NavRoute.budget => const BudgetPage(),
+    // Project Details
+    NavRoute.programming => const ProgrammingPage(),
+    NavRoute.clientProvided => const DocumentRegistryPage(title: 'Client Provided', filterSource: 'Client'),
+    NavRoute.photos => const DocumentRegistryPage(title: 'Photos', photosMode: true),
+    NavRoute.projectInformationList => const ProjectInfoPage(),
+    // Design Phases
+    NavRoute.schematicDesign => const DocumentRegistryPage(title: 'Schematic Design', filterPhase: 'SD'),
+    NavRoute.designDevelopment => const DocumentRegistryPage(title: 'Design Development', filterPhase: 'DD'),
+    NavRoute.constructionDocuments => const DocumentRegistryPage(title: 'Construction Documents', filterPhase: 'CD'),
+    // Disciplines
+    NavRoute.architectural => const DisciplinePage(disciplineName: 'Architectural', icon: Icons.architecture, accentColor: Color(0xFF4FC3F7)),
+    NavRoute.civil => const DisciplinePage(disciplineName: 'Civil', icon: Icons.terrain_outlined, accentColor: Color(0xFF81C784)),
+    NavRoute.landscape => const DisciplinePage(disciplineName: 'Landscape', icon: Icons.park_outlined, accentColor: Color(0xFF4DB6AC)),
+    NavRoute.mechanical => const DisciplinePage(disciplineName: 'Mechanical', icon: Icons.settings_outlined, accentColor: Color(0xFFFFB74D)),
+    NavRoute.electrical => const DisciplinePage(disciplineName: 'Electrical', icon: Icons.bolt_outlined, accentColor: Color(0xFFF06292)),
+    NavRoute.plumbing => const DisciplinePage(disciplineName: 'Plumbing', icon: Icons.water_drop_outlined, accentColor: Color(0xFF7986CB)),
+    // Deliverables & Media
+    NavRoute.progressPrints => const PrintSetsPage(printType: 'Progress', title: 'Progress Prints'),
+    NavRoute.signedPrints => const PrintSetsPage(printType: 'Signed/Sealed', title: 'Signed & Sealed Prints'),
+    NavRoute.renderings => const RenderingsPage(),
+    // Construction Admin
     NavRoute.rfis => const RfiPage(),
-    // Files-related routes
-    NavRoute.clientProvided || NavRoute.photos => const FilesPage(),
-    // Everything else → placeholder
-    _ => PlaceholderPage(title: route.label),
+    NavRoute.asis => const AsiPage(),
+    // Import (not a real page route — handled by dialog)
+    NavRoute.importProjectInformation => const FilesPage(),
   };
 }
