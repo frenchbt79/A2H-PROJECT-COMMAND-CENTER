@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/top_right_panel.dart';
 import '../state/project_providers.dart';
+import '../widgets/crud_dialogs.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -312,12 +313,15 @@ class _ActiveTodosCardState extends ConsumerState<_ActiveTodosCard> {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          todo.text,
-                          style: AppTheme.body.copyWith(
-                            fontSize: 12,
-                            decoration: todo.done ? TextDecoration.lineThrough : null,
-                            color: todo.done ? Tokens.textMuted : Tokens.textPrimary,
+                        child: GestureDetector(
+                          onTap: () => showTodoDialog(context, ref, existing: todo),
+                          child: Text(
+                            todo.text,
+                            style: AppTheme.body.copyWith(
+                              fontSize: 12,
+                              decoration: todo.done ? TextDecoration.lineThrough : null,
+                              color: todo.done ? Tokens.textMuted : Tokens.textPrimary,
+                            ),
                           ),
                         ),
                       ),

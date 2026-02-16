@@ -83,7 +83,7 @@ class _RfiPageState extends ConsumerState<RfiPage> {
               IconButton(
                 icon: const Icon(Icons.add_circle_outline, size: 20, color: Tokens.accent),
                 tooltip: 'New RFI',
-                onPressed: () => showAddRfiDialog(context, ref),
+                onPressed: () => showRfiDialog(context, ref),
               ),
               _CountChip(
                 label: 'All',
@@ -231,15 +231,22 @@ class _RfiPageState extends ConsumerState<RfiPage> {
                                             ),
                                             SizedBox(
                                               width: 50,
-                                              child: Align(
-                                                alignment: Alignment.centerRight,
-                                                child: GestureDetector(
-                                                  onTap: () async {
-                                                    final confirmed = await showDeleteConfirmation(context, rfi.number);
-                                                    if (confirmed) ref.read(rfisProvider.notifier).remove(rfi.id);
-                                                  },
-                                                  child: const Icon(Icons.delete_outline, size: 14, color: Tokens.textMuted),
-                                                ),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                children: [
+                                                  GestureDetector(
+                                                    onTap: () => showRfiDialog(context, ref, existing: rfi),
+                                                    child: const Icon(Icons.edit_outlined, size: 14, color: Tokens.textMuted),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  GestureDetector(
+                                                    onTap: () async {
+                                                      final confirmed = await showDeleteConfirmation(context, rfi.number);
+                                                      if (confirmed) ref.read(rfisProvider.notifier).remove(rfi.id);
+                                                    },
+                                                    child: const Icon(Icons.delete_outline, size: 14, color: Tokens.textMuted),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ],

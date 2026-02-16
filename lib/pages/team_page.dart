@@ -52,14 +52,14 @@ class _TeamPageState extends ConsumerState<TeamPage> {
               IconButton(
                 icon: const Icon(Icons.person_add_outlined, size: 20, color: Tokens.accent),
                 tooltip: 'Add Team Member',
-                onPressed: () => showAddTeamMemberDialog(context, ref),
+                onPressed: () => showTeamMemberDialog(context, ref),
               ),
               const Spacer(),
               _StatChip(label: '${team.length} Members', icon: Icons.people_outline),
               const SizedBox(width: 8),
               _StatChip(label: '${companies.length} Firms', icon: Icons.business_outlined),
               const SizedBox(width: 8),
-              _AddButton(onTap: () => showAddTeamMemberDialog(context, ref)),
+              _AddButton(onTap: () => showTeamMemberDialog(context, ref)),
             ],
           ),
           const SizedBox(height: Tokens.spaceMd),
@@ -277,7 +277,7 @@ class _TeamCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () => showAddTeamMemberDialog(context, ref),
+                onTap: () => showTeamMemberDialog(context, ref, existing: member),
                 child: const Icon(Icons.edit_outlined, size: 16, color: Tokens.textMuted),
               ),
               const SizedBox(height: 8),
