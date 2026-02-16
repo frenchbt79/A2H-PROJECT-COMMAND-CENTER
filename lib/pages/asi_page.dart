@@ -165,7 +165,14 @@ class _AsiPageState extends ConsumerState<AsiPage> {
                   ),
                   const Divider(color: Tokens.glassBorder, height: 1),
                   Expanded(
-                    child: ListView.separated(
+                    child: displayList.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No ASIs match the current filter.',
+                              style: AppTheme.caption.copyWith(color: Tokens.textMuted),
+                            ),
+                          )
+                        : ListView.separated(
                       padding: const EdgeInsets.only(top: 8),
                       itemCount: displayList.length,
                       separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
