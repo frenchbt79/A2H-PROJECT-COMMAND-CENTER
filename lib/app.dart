@@ -21,6 +21,8 @@ import 'pages/project_info_page.dart';
 import 'widgets/global_search.dart';
 import 'widgets/notification_panel.dart';
 import 'pages/settings_page.dart';
+import 'pages/project_map_page.dart';
+import 'widgets/info_bar.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -117,6 +119,8 @@ class _DesktopLayout extends StatelessWidget {
                 ),
               ),
               Container(height: 1, color: Tokens.glassBorder),
+              // Info bar with calendar, deadlines, key metrics
+              const InfoBar(),
               // Page content
               Expanded(
                 child: AnimatedSwitcher(
@@ -175,6 +179,7 @@ class _MobileLayout extends StatelessWidget {
             ),
           ),
         ),
+        const InfoBar(),
         Expanded(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
@@ -196,6 +201,7 @@ Widget _buildPage(NavRoute route) {
   return switch (route) {
     // Dashboard
     NavRoute.dashboard => const DashboardPage(),
+    NavRoute.projectMap => const ProjectMapPage(),
     // Project Admin
     NavRoute.projectTeam => const TeamPage(),
     NavRoute.contract => const ContractPage(),
@@ -220,6 +226,7 @@ Widget _buildPage(NavRoute route) {
     // Deliverables & Media
     NavRoute.progressPrints => const PrintSetsPage(printType: 'Progress', title: 'Progress Prints'),
     NavRoute.signedPrints => const PrintSetsPage(printType: 'Signed/Sealed', title: 'Signed & Sealed Prints'),
+    NavRoute.specs => const DocumentRegistryPage(title: 'Specifications', filterPhase: ''),
     NavRoute.renderings => const RenderingsPage(),
     // Construction Admin
     NavRoute.rfis => const RfiPage(),

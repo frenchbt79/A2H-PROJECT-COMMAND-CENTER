@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ── Route identifiers ──────────────────────────────────────
 enum NavRoute {
   dashboard,
+  projectMap,
   // PROJECT ADMIN
   projectTeam,
   contract,
@@ -27,6 +28,7 @@ enum NavRoute {
   // DELIVERABLES & MEDIA
   progressPrints,
   signedPrints,
+  specs,
   renderings,
   // CONSTRUCTION ADMIN
   rfis,
@@ -42,6 +44,8 @@ extension NavRouteLabel on NavRoute {
     switch (this) {
       case NavRoute.dashboard:
         return 'Project Dashboard';
+      case NavRoute.projectMap:
+        return 'Project Map';
       case NavRoute.projectTeam:
         return 'Project Team';
       case NavRoute.contract:
@@ -80,6 +84,8 @@ extension NavRouteLabel on NavRoute {
         return 'Progress Prints';
       case NavRoute.signedPrints:
         return 'Signed Prints';
+      case NavRoute.specs:
+        return 'Specifications';
       case NavRoute.renderings:
         return 'Renderings';
       case NavRoute.rfis:
@@ -131,6 +137,7 @@ const List<SidebarGroup> sidebarGroups = [
   SidebarGroup(id: 'deliverables', label: 'DELIVERABLES & MEDIA', items: [
     NavRoute.progressPrints,
     NavRoute.signedPrints,
+    NavRoute.specs,
     NavRoute.renderings,
   ]),
   SidebarGroup(id: 'construction', label: 'CONSTRUCTION ADMIN', items: [
