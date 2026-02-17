@@ -89,6 +89,18 @@ class DocumentRegistryPage extends ConsumerWidget {
           : constraints.maxWidth > 600
               ? 3
               : 2;
+      if (docs.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(photosMode ? Icons.photo_library_outlined : Icons.folder_open, size: 40, color: Tokens.textMuted),
+              const SizedBox(height: 12),
+              Text(photosMode ? 'No photos yet.' : 'No documents found.', style: AppTheme.body.copyWith(color: Tokens.textMuted)),
+            ],
+          ),
+        );
+      }
       return GridView.builder(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossCount,
@@ -146,7 +158,14 @@ class DocumentRegistryPage extends ConsumerWidget {
   // ═════════════════════════════════════════════════════════
   Widget _buildDocTable(List<PhaseDocument> docs) {
     return GlassCard(
-      child: Column(
+      child: LayoutBuilder(
+        builder: (context, outerConstraints) {
+          final minWidth = outerConstraints.maxWidth < 700 ? 700.0 : outerConstraints.maxWidth;
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: minWidth,
+              child: Column(
         children: [
           // Header row
           Padding(
@@ -167,7 +186,18 @@ class DocumentRegistryPage extends ConsumerWidget {
           const Divider(color: Tokens.glassBorder, height: 1),
           // Rows
           Expanded(
-            child: ListView.separated(
+            child: docs.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.folder_open, size: 40, color: Tokens.textMuted),
+                        const SizedBox(height: 12),
+                        Text('No documents found.', style: AppTheme.body.copyWith(color: Tokens.textMuted)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
               padding: const EdgeInsets.only(top: 4),
               itemCount: docs.length,
               separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
@@ -231,6 +261,10 @@ class DocumentRegistryPage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+            ),
+          );
+        },
       ),
     );
   }

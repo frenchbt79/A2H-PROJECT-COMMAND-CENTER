@@ -70,6 +70,13 @@ class SettingsPage extends ConsumerWidget {
                       ),
                       const Divider(color: Tokens.glassBorder, height: 1),
                       _ActionRow(
+                        icon: Icons.upload_outlined,
+                        label: 'Import Project Data',
+                        description: 'Paste JSON data from clipboard to restore a backup',
+                        onTap: () => _confirmImport(context, storage),
+                      ),
+                      const Divider(color: Tokens.glassBorder, height: 1),
+                      _ActionRow(
                         icon: Icons.refresh_outlined,
                         label: 'Reset to Demo Data',
                         description: 'Clear all changes and restore default sample data',
@@ -153,6 +160,66 @@ class SettingsPage extends ConsumerWidget {
               }
             },
             child: Text('Reset', style: AppTheme.body.copyWith(color: Tokens.chipRed, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+  void _confirmImport(BuildContext context, StorageService storage) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Tokens.bgMid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Tokens.radiusMd)),
+        title: Text('Import from Clipboard?', style: AppTheme.subheading),
+        content: Text(
+          'This will read JSON data from your clipboard and overwrite current project data. '
+          'Make sure you have valid exported JSON copied. This cannot be undone.',
+          style: AppTheme.body.copyWith(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: AppTheme.body.copyWith(color: Tokens.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final data = await Clipboard.getData(Clipboard.kTextPlain);
+              if (data?.text == null || data!.text!.isEmpty) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Clipboard is empty. Copy exported JSON first.'),
+                      backgroundColor: Tokens.chipRed,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                return;
+              }
+              final error = await storage.importAll(data.text!);
+              if (context.mounted) {
+                if (error == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Data imported successfully! Restart the app to see changes.'),
+                      backgroundColor: Tokens.chipGreen,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Import failed: $error'),
+                      backgroundColor: Tokens.chipRed,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text('Import', style: AppTheme.body.copyWith(color: Tokens.accent, fontWeight: FontWeight.w700)),
           ),
         ],
       ),

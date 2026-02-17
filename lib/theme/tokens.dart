@@ -21,6 +21,8 @@ class Tokens {
   static const Color chipYellow = Color(0xFFFFC107);
   static const Color chipRed = Color(0xFFF44336);
   static const Color chipBlue = Color(0xFF42A5F5);
+  static const Color chipOrange = Color(0xFFFF9800);
+  static const Color chipIndigo = Color(0xFF7C4DFF);
 
   // ── Radii ────────────────────────────────────────────────
   static const double radiusSm = 8;

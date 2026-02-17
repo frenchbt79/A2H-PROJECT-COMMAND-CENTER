@@ -23,6 +23,7 @@ class StorageService {
   static const _keyProjectInfo = 'pcc_project_info';
   static const _keyChangeOrders = 'pcc_change_orders';
   static const _keySubmittals = 'pcc_submittals';
+  static const _keyActivities = 'pcc_activities';
 
   late final SharedPreferences _prefs;
 
@@ -112,6 +113,25 @@ class StorageService {
   // ── Submittals ────────────────────────────────────────────
   List<SubmittalItem> loadSubmittals() => _loadList(_keySubmittals, _submittalFromJson);
   Future<void> saveSubmittals(List<SubmittalItem> items) => _saveList(_keySubmittals, items, _submittalToJson);
+
+  // ── Activities ──────────────────────────────────────────────
+  List<ActivityItem> loadActivities() => _loadList(_keyActivities, _activityFromJson);
+  Future<void> saveActivities(List<ActivityItem> items) => _saveList(_keyActivities, items, _activityToJson);
+
+  // ── Import all data from JSON string ────────────────────────────
+  Future<String?> importAll(String jsonString) async {
+    try {
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+      for (final entry in data.entries) {
+        if (entry.key.startsWith('pcc_') && entry.value is List) {
+          await _prefs.setString(entry.key, jsonEncode(entry.value));
+        }
+      }
+      return null; // success
+    } catch (e) {
+      return e.toString();
+    }
+  }
 
   // ── Clear all data ──────────────────────────────────────────
   Future<void> clearAll() async {
@@ -331,5 +351,17 @@ class StorageService {
     dateSubmitted: DateTime.parse(j['dateSubmitted']),
     dateReturned: j['dateReturned'] != null ? DateTime.parse(j['dateReturned']) : null,
     submittedBy: j['submittedBy'], assignedTo: j['assignedTo'],
+  );
+
+  // ── Activities ────────────────────────────────────────────
+  static Map<String, dynamic> _activityToJson(ActivityItem a) => {
+    'id': a.id, 'title': a.title, 'description': a.description,
+    'timestamp': a.timestamp.toIso8601String(), 'category': a.category,
+    'isRead': a.isRead,
+  };
+  static ActivityItem _activityFromJson(Map<String, dynamic> j) => ActivityItem(
+    id: j['id'], title: j['title'], description: j['description'],
+    timestamp: DateTime.parse(j['timestamp']), category: j['category'],
+    isRead: j['isRead'] ?? false,
   );
 }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
-import '../models/project_models.dart';
+import '../widgets/crud_dialogs.dart';
 import '../state/project_providers.dart';
 
 class BudgetPage extends ConsumerWidget {
@@ -17,93 +17,151 @@ class BudgetPage extends ConsumerWidget {
     final totalCommitted = lines.fold(0.0, (s, l) => s + l.committed);
     final totalRemaining = totalBudget - totalSpent - totalCommitted;
 
-    return Padding(
-      padding: const EdgeInsets.all(Tokens.spaceLg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('BUDGET', style: AppTheme.heading),
-          const SizedBox(height: Tokens.spaceLg),
-          // Summary tiles
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final tiles = [
-                _BudgetTile(label: 'Total Budget', value: _fmt(totalBudget), color: Tokens.textPrimary),
-                _BudgetTile(label: 'Spent', value: _fmt(totalSpent), color: Tokens.chipRed),
-                _BudgetTile(label: 'Committed', value: _fmt(totalCommitted), color: Tokens.chipYellow),
-                _BudgetTile(label: 'Remaining', value: _fmt(totalRemaining), color: Tokens.chipGreen),
-              ];
-              if (constraints.maxWidth > 600) {
-                return Row(children: tiles.map((t) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: t))).toList());
-              }
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: tiles.map((t) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: t)).toList(),
-              );
-            },
-          ),
-          const SizedBox(height: Tokens.spaceLg),
-          // Table
-          Expanded(
-            child: GlassCard(
-              child: LayoutBuilder(
-                builder: (context, outerConstraints) {
-                  final minTableWidth = outerConstraints.maxWidth < 700 ? 700.0 : outerConstraints.maxWidth;
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: minTableWidth,
-                      child: Column(
-                        children: [
-                          // Header
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Expanded(flex: 3, child: Text('CATEGORY', style: AppTheme.sidebarGroupLabel)),
-                                Expanded(flex: 2, child: Text('BUDGETED', style: AppTheme.sidebarGroupLabel)),
-                                Expanded(flex: 2, child: Text('SPENT', style: AppTheme.sidebarGroupLabel)),
-                                Expanded(flex: 2, child: Text('COMMITTED', style: AppTheme.sidebarGroupLabel)),
-                                Expanded(flex: 2, child: Text('REMAINING', style: AppTheme.sidebarGroupLabel)),
-                                Expanded(flex: 3, child: Text('UTILIZATION', style: AppTheme.sidebarGroupLabel)),
-                              ],
-                            ),
-                          ),
-                          const Divider(color: Tokens.glassBorder, height: 1),
-                          Expanded(
-                            child: ListView.separated(
-                              padding: const EdgeInsets.only(top: 4),
-                              itemCount: lines.length,
-                              separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
-                              itemBuilder: (context, i) => _BudgetRow(line: lines[i]),
-                            ),
-                          ),
-                          const Divider(color: Tokens.glassBorder, height: 1),
-                          // Totals row
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Row(
-                              children: [
-                                Expanded(flex: 3, child: Text('TOTAL', style: AppTheme.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12))),
-                                Expanded(flex: 2, child: Text(_fmt(totalBudget), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12))),
-                                Expanded(flex: 2, child: Text(_fmt(totalSpent), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipRed))),
-                                Expanded(flex: 2, child: Text(_fmt(totalCommitted), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipYellow))),
-                                Expanded(flex: 2, child: Text(_fmt(totalRemaining), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipGreen))),
-                                Expanded(flex: 3, child: _UtilBar(percent: (totalSpent + totalCommitted) / totalBudget)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(Tokens.spaceLg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('BUDGET', style: AppTheme.heading),
+              const SizedBox(height: Tokens.spaceLg),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final tiles = [
+                    _BudgetTile(label: 'Total Budget', value: _fmt(totalBudget), color: Tokens.textPrimary),
+                    _BudgetTile(label: 'Spent', value: _fmt(totalSpent), color: Tokens.chipRed),
+                    _BudgetTile(label: 'Committed', value: _fmt(totalCommitted), color: Tokens.chipYellow),
+                    _BudgetTile(label: 'Remaining', value: _fmt(totalRemaining), color: Tokens.chipGreen),
+                  ];
+                  if (constraints.maxWidth > 600) {
+                    return Row(children: tiles.map((t) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: t))).toList());
+                  }
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: tiles.map((t) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: t)).toList(),
                   );
                 },
               ),
-            ),
+              const SizedBox(height: Tokens.spaceLg),
+              Expanded(
+                child: GlassCard(
+                  child: LayoutBuilder(
+                    builder: (context, outerConstraints) {
+                      final minTableWidth = outerConstraints.maxWidth < 700 ? 700.0 : outerConstraints.maxWidth;
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: minTableWidth,
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Row(
+                                  children: [
+                                    Expanded(flex: 3, child: Text('CATEGORY', style: AppTheme.sidebarGroupLabel)),
+                                    Expanded(flex: 2, child: Text('BUDGETED', style: AppTheme.sidebarGroupLabel)),
+                                    Expanded(flex: 2, child: Text('SPENT', style: AppTheme.sidebarGroupLabel)),
+                                    Expanded(flex: 2, child: Text('COMMITTED', style: AppTheme.sidebarGroupLabel)),
+                                    Expanded(flex: 2, child: Text('REMAINING', style: AppTheme.sidebarGroupLabel)),
+                                    Expanded(flex: 3, child: Text('UTILIZATION', style: AppTheme.sidebarGroupLabel)),
+                                    const SizedBox(width: 52),
+                                  ],
+                                ),
+                              ),
+                              const Divider(color: Tokens.glassBorder, height: 1),
+                              Expanded(
+                                child: lines.isEmpty
+                                    ? Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.account_balance_wallet_outlined, size: 40, color: Tokens.textMuted),
+                                            const SizedBox(height: 12),
+                                            Text('No budget lines defined.', style: AppTheme.body.copyWith(color: Tokens.textMuted)),
+                                          ],
+                                        ),
+                                      )
+                                    : ListView.separated(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  itemCount: lines.length,
+                                  separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
+                                  itemBuilder: (context, i) {
+                                    final line = lines[i];
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      child: Row(
+                                        children: [
+                                          Expanded(flex: 3, child: Text(line.category, style: AppTheme.body.copyWith(fontSize: 12))),
+                                          Expanded(flex: 2, child: Text(_fmt(line.budgeted), style: AppTheme.body.copyWith(fontSize: 12))),
+                                          Expanded(flex: 2, child: Text(_fmt(line.spent), style: AppTheme.body.copyWith(fontSize: 12, color: Tokens.chipRed))),
+                                          Expanded(flex: 2, child: Text(_fmt(line.committed), style: AppTheme.body.copyWith(fontSize: 12, color: Tokens.chipYellow))),
+                                          Expanded(flex: 2, child: Text(_fmt(line.remaining), style: AppTheme.body.copyWith(fontSize: 12, color: line.remaining > 0 ? Tokens.chipGreen : Tokens.chipRed))),
+                                          Expanded(flex: 3, child: _UtilBar(percent: line.percentUsed)),
+                                          SizedBox(
+                                            width: 52,
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                InkWell(
+                                                  onTap: () => showBudgetLineDialog(context, ref, existing: line),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.edit_outlined, size: 14, color: Tokens.textMuted)),
+                                                ),
+                                                InkWell(
+                                                  onTap: () async {
+                                                    final ok = await showDeleteConfirmation(context, line.category);
+                                                    if (ok) ref.read(budgetProvider.notifier).remove(line.id);
+                                                  },
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.delete_outline, size: 14, color: Tokens.chipRed)),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const Divider(color: Tokens.glassBorder, height: 1),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: Row(
+                                  children: [
+                                    Expanded(flex: 3, child: Text('TOTAL', style: AppTheme.body.copyWith(fontWeight: FontWeight.w700, fontSize: 12))),
+                                    Expanded(flex: 2, child: Text(_fmt(totalBudget), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12))),
+                                    Expanded(flex: 2, child: Text(_fmt(totalSpent), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipRed))),
+                                    Expanded(flex: 2, child: Text(_fmt(totalCommitted), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipYellow))),
+                                    Expanded(flex: 2, child: Text(_fmt(totalRemaining), style: AppTheme.body.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: Tokens.chipGreen))),
+                                    Expanded(flex: 3, child: _UtilBar(percent: (totalSpent + totalCommitted) / totalBudget)),
+                                    const SizedBox(width: 52),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          bottom: 24,
+          right: 24,
+          child: FloatingActionButton(
+            backgroundColor: Tokens.accent,
+            onPressed: () => showBudgetLineDialog(context, ref),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 
@@ -130,31 +188,6 @@ class _BudgetTile extends StatelessWidget {
           Text(label, style: AppTheme.caption.copyWith(fontSize: 10)),
           const SizedBox(height: 6),
           Text(value, style: AppTheme.subheading.copyWith(color: color)),
-        ],
-      ),
-    );
-  }
-}
-
-class _BudgetRow extends StatelessWidget {
-  final BudgetLine line;
-  const _BudgetRow({required this.line});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(flex: 3, child: Text(line.category, style: AppTheme.body.copyWith(fontSize: 12))),
-          Expanded(flex: 2, child: Text(BudgetPage._fmt(line.budgeted), style: AppTheme.body.copyWith(fontSize: 12))),
-          Expanded(flex: 2, child: Text(BudgetPage._fmt(line.spent), style: AppTheme.body.copyWith(fontSize: 12, color: Tokens.chipRed))),
-          Expanded(flex: 2, child: Text(BudgetPage._fmt(line.committed), style: AppTheme.body.copyWith(fontSize: 12, color: Tokens.chipYellow))),
-          Expanded(flex: 2, child: Text(
-            BudgetPage._fmt(line.remaining),
-            style: AppTheme.body.copyWith(fontSize: 12, color: line.remaining > 0 ? Tokens.chipGreen : Tokens.chipRed),
-          )),
-          Expanded(flex: 3, child: _UtilBar(percent: line.percentUsed)),
         ],
       ),
     );

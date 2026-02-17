@@ -47,7 +47,16 @@ class PrintSetsPage extends ConsumerWidget {
           // ── Cards ─────────────────────────────────────────
           Expanded(
             child: sets.isEmpty
-                ? Center(child: Text('No print sets of this type.', style: AppTheme.caption))
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.print_disabled_outlined, size: 40, color: Tokens.textMuted),
+                        const SizedBox(height: 12),
+                        Text('No print sets of this type.', style: AppTheme.body.copyWith(color: Tokens.textMuted)),
+                      ],
+                    ),
+                  )
                 : ListView.separated(
                     itemCount: sets.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),

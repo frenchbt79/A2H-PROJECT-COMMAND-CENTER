@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -12,8 +13,6 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use full screen width so the dashboard doesn't go mobile
-    // when the shell is already in desktop mode with sidebar visible.
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < Tokens.mobileBreakpoint;
     if (isMobile) return _MobileLayout();
@@ -34,6 +33,23 @@ class _DesktopLayout extends StatelessWidget {
         children: [
           Text('PROJECT DASHBOARD', style: AppTheme.heading),
           const SizedBox(height: Tokens.spaceLg),
+          // Row 1: Summary tiles
+          SizedBox(
+            height: 100,
+            child: Row(
+              children: [
+                Expanded(child: _ChangeOrderSummaryTile()),
+                const SizedBox(width: 12),
+                Expanded(child: _SubmittalStatusTile()),
+                const SizedBox(width: 12),
+                Expanded(child: _RfiStatusTile()),
+                const SizedBox(width: 12),
+                Expanded(child: _BudgetOverviewTile()),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Row 2: Gantt + Calendar/Deadlines
           Expanded(
             flex: 5,
             child: Row(
@@ -45,6 +61,7 @@ class _DesktopLayout extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          // Row 3: Files + Todos
           Expanded(
             flex: 3,
             child: Row(
@@ -72,6 +89,23 @@ class _MobileLayout extends StatelessWidget {
       children: [
         Text('PROJECT DASHBOARD', style: AppTheme.heading),
         const SizedBox(height: Tokens.spaceMd),
+        // Summary tiles in 2x2 grid on mobile
+        Row(
+          children: [
+            Expanded(child: SizedBox(height: 100, child: _ChangeOrderSummaryTile())),
+            const SizedBox(width: 8),
+            Expanded(child: SizedBox(height: 100, child: _SubmittalStatusTile())),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: SizedBox(height: 100, child: _RfiStatusTile())),
+            const SizedBox(width: 8),
+            Expanded(child: SizedBox(height: 100, child: _BudgetOverviewTile())),
+          ],
+        ),
+        const SizedBox(height: 12),
         SizedBox(height: 300, child: _GanttCard()),
         const SizedBox(height: 12),
         SizedBox(height: 260, child: _CalendarCardStandalone()),
@@ -87,7 +121,296 @@ class _MobileLayout extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// GANTT CARD â€” reads from scheduleProvider
+// SUMMARY TILE: Change Orders
+// ═══════════════════════════════════════════════════════════
+class _ChangeOrderSummaryTile extends ConsumerWidget {
+  static final _fmt = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orders = ref.watch(changeOrdersProvider);
+    final approvedTotal = orders
+        .where((c) => c.status == 'Approved')
+        .fold<double>(0, (sum, c) => sum + c.amount);
+    final pendingTotal = orders
+        .where((c) => c.status == 'Pending')
+        .fold<double>(0, (sum, c) => sum + c.amount);
+
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.swap_horiz, color: Tokens.accent, size: 16),
+              const SizedBox(width: 6),
+              Text('CHANGE ORDERS', style: AppTheme.sidebarGroupLabel.copyWith(fontSize: 10)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Tokens.accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                ),
+                child: Text('${orders.length}', style: AppTheme.caption.copyWith(fontSize: 10, color: Tokens.accent, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Approved', style: AppTheme.caption.copyWith(fontSize: 9, color: Tokens.chipGreen)),
+                    Text(_fmt.format(approvedTotal), style: AppTheme.body.copyWith(fontSize: 13, fontWeight: FontWeight.w700, color: Tokens.chipGreen)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pending', style: AppTheme.caption.copyWith(fontSize: 9, color: Tokens.chipYellow)),
+                    Text(_fmt.format(pendingTotal), style: AppTheme.body.copyWith(fontSize: 13, fontWeight: FontWeight.w700, color: Tokens.chipYellow)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUMMARY TILE: Submittals
+// ═══════════════════════════════════════════════════════════
+class _SubmittalStatusTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final subs = ref.watch(submittalsProvider);
+    final approved = subs.where((s) => s.status == 'Approved' || s.status == 'Approved as Noted').length;
+    final pending = subs.where((s) => s.status == 'Pending').length;
+    final revise = subs.where((s) => s.status == 'Revise & Resubmit').length;
+    final total = subs.length;
+
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.fact_check_outlined, color: Tokens.accent, size: 16),
+              const SizedBox(width: 6),
+              Text('SUBMITTALS', style: AppTheme.sidebarGroupLabel.copyWith(fontSize: 10)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Tokens.accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                ),
+                child: Text('$total', style: AppTheme.caption.copyWith(fontSize: 10, color: Tokens.accent, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          if (total > 0) ...[
+            _MiniBar(segments: [
+              _BarSegment(approved / total, Tokens.chipGreen),
+              _BarSegment(pending / total, Tokens.chipYellow),
+              _BarSegment(revise / total, Tokens.chipOrange),
+            ]),
+            const SizedBox(height: 6),
+          ],
+          Row(
+            children: [
+              _MiniStat(label: 'Approved', count: approved, color: Tokens.chipGreen),
+              const SizedBox(width: 8),
+              _MiniStat(label: 'Pending', count: pending, color: Tokens.chipYellow),
+              if (revise > 0) ...[
+                const SizedBox(width: 8),
+                _MiniStat(label: 'Revise', count: revise, color: Tokens.chipOrange),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUMMARY TILE: RFIs
+// ═══════════════════════════════════════════════════════════
+class _RfiStatusTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rfis = ref.watch(rfisProvider);
+    final open = rfis.where((r) => r.status == 'Open').length;
+    final pending = rfis.where((r) => r.status == 'Pending').length;
+    final closed = rfis.where((r) => r.status == 'Closed').length;
+    final now = DateTime.now();
+    final overdue = rfis.where((r) =>
+        r.status != 'Closed' &&
+        now.difference(r.dateOpened).inDays > 14).length;
+
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.help_outline, color: Tokens.accent, size: 16),
+              const SizedBox(width: 6),
+              Text('RFIs', style: AppTheme.sidebarGroupLabel.copyWith(fontSize: 10)),
+              const Spacer(),
+              if (overdue > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Tokens.chipRed.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                  ),
+                  child: Text('$overdue overdue', style: AppTheme.caption.copyWith(fontSize: 9, color: Tokens.chipRed, fontWeight: FontWeight.w700)),
+                ),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              _MiniStat(label: 'Open', count: open, color: Tokens.chipBlue),
+              const SizedBox(width: 8),
+              _MiniStat(label: 'Pending', count: pending, color: Tokens.chipYellow),
+              const SizedBox(width: 8),
+              _MiniStat(label: 'Closed', count: closed, color: Tokens.chipGreen),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUMMARY TILE: Budget Overview
+// ═══════════════════════════════════════════════════════════
+class _BudgetOverviewTile extends ConsumerWidget {
+  static final _fmt = NumberFormat.compact();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final budget = ref.watch(budgetProvider);
+    final totalBudget = budget.fold<double>(0, (s, b) => s + b.budgeted);
+    final totalSpent = budget.fold<double>(0, (s, b) => s + b.spent);
+    final totalCommitted = budget.fold<double>(0, (s, b) => s + b.committed);
+    final used = totalSpent + totalCommitted;
+    final pct = totalBudget > 0 ? used / totalBudget : 0.0;
+    final barColor = pct > 0.9 ? Tokens.chipRed : pct > 0.75 ? Tokens.chipYellow : Tokens.chipGreen;
+
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_outlined, color: Tokens.accent, size: 16),
+              const SizedBox(width: 6),
+              Text('BUDGET', style: AppTheme.sidebarGroupLabel.copyWith(fontSize: 10)),
+              const Spacer(),
+              Text('${(pct * 100).toInt()}%', style: AppTheme.caption.copyWith(fontSize: 11, color: barColor, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const Spacer(),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: SizedBox(
+              height: 6,
+              child: LinearProgressIndicator(
+                value: pct.clamp(0.0, 1.0),
+                backgroundColor: Tokens.glassBorder,
+                valueColor: AlwaysStoppedAnimation(barColor),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Text('\$${_fmt.format(totalBudget)} budget', style: AppTheme.caption.copyWith(fontSize: 9)),
+              ),
+              Text('\$${_fmt.format(totalBudget - used)} remaining', style: AppTheme.caption.copyWith(fontSize: 9, color: barColor)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHARED HELPERS for summary tiles
+// ═══════════════════════════════════════════════════════════
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+  const _MiniStat({required this.label, required this.count, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text('$count', style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+        const SizedBox(width: 2),
+        Text(label, style: AppTheme.caption.copyWith(fontSize: 9)),
+      ],
+    );
+  }
+}
+
+class _BarSegment {
+  final double fraction;
+  final Color color;
+  const _BarSegment(this.fraction, this.color);
+}
+
+class _MiniBar extends StatelessWidget {
+  final List<_BarSegment> segments;
+  const _MiniBar({required this.segments});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: SizedBox(
+        height: 6,
+        child: Row(
+          children: segments.map((seg) {
+            if (seg.fraction <= 0) return const SizedBox.shrink();
+            return Flexible(
+              flex: (seg.fraction * 100).round().clamp(1, 100),
+              child: Container(color: seg.color),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// GANTT CARD — reads from scheduleProvider
 // ═══════════════════════════════════════════════════════════
 class _GanttCard extends ConsumerWidget {
   @override
@@ -188,7 +511,7 @@ class _LegendDot extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// RECENT FILES CARD â€” reads from filesProvider
+// RECENT FILES CARD — reads from filesProvider
 // ═══════════════════════════════════════════════════════════
 class _RecentFilesCard extends ConsumerWidget {
   @override
@@ -241,7 +564,7 @@ class _RecentFilesCard extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ACTIVE TO-DOS CARD â€” reads from todosProvider
+// ACTIVE TO-DOS CARD — reads from todosProvider
 // ═══════════════════════════════════════════════════════════
 class _ActiveTodosCard extends ConsumerStatefulWidget {
   @override

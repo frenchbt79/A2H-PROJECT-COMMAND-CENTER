@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/crud_dialogs.dart';
 import '../models/project_models.dart';
 import '../state/project_providers.dart';
 
@@ -77,12 +78,14 @@ class _ContractPageState extends ConsumerState<ContractPage> {
     // Apply filter + sort for the table
     final displayed = _applySortAndFilter(contracts);
 
-    return Padding(
-      padding: const EdgeInsets.all(Tokens.spaceLg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('CONTRACT', style: AppTheme.heading),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(Tokens.spaceLg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('CONTRACT', style: AppTheme.heading),
           const SizedBox(height: Tokens.spaceLg),
           // Summary row
           LayoutBuilder(
@@ -184,6 +187,7 @@ class _ContractPageState extends ConsumerState<ContractPage> {
                             onTap: () => _onSort('status'),
                           ),
                         ),
+                        const SizedBox(width: 60),
                       ],
                     ),
                   ),
@@ -200,7 +204,41 @@ class _ContractPageState extends ConsumerState<ContractPage> {
                       padding: const EdgeInsets.only(top: 8),
                       itemCount: displayed.length,
                       separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
-                      itemBuilder: (context, i) => _ContractRow(contract: displayed[i]),
+                      itemBuilder: (context, i) {
+                        final c = displayed[i];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Row(
+                            children: [
+                              Expanded(flex: 4, child: Text(c.title, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                              Expanded(flex: 2, child: _TypeChip(type: c.type)),
+                              Expanded(flex: 2, child: Text(ContractPage._fmt(c.amount), style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: c.amount < 0 ? Tokens.chipRed : Tokens.textPrimary))),
+                              Expanded(flex: 1, child: _StatusDot(status: c.status)),
+                              SizedBox(
+                                width: 60,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    InkWell(
+                                      onTap: () => showContractDialog(context, ref, existing: c),
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.edit_outlined, size: 15, color: Tokens.textMuted)),
+                                    ),
+                                    InkWell(
+                                      onTap: () async {
+                                        final ok = await showDeleteConfirmation(context, c.title);
+                                        if (ok) ref.read(contractsProvider.notifier).remove(c.id);
+                                      },
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.delete_outline, size: 15, color: Tokens.chipRed)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -209,6 +247,17 @@ class _ContractPageState extends ConsumerState<ContractPage> {
           ),
         ],
       ),
+    ),
+    Positioned(
+      bottom: 24,
+      right: 24,
+      child: FloatingActionButton(
+        backgroundColor: Tokens.accent,
+        onPressed: () => showContractDialog(context, ref),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    ),
+    ],
     );
   }
 }
@@ -318,46 +367,6 @@ class _SummaryTile extends StatelessWidget {
           Text(label, style: AppTheme.caption.copyWith(fontSize: 10)),
           const SizedBox(height: 6),
           Text(value, style: AppTheme.subheading.copyWith(color: color)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Contract Row ──────────────────────────────────────────────
-class _ContractRow extends StatelessWidget {
-  final ContractItem contract;
-  const _ContractRow({required this.contract});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: Text(contract.title, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis),
-          ),
-          Expanded(
-            flex: 2,
-            child: _TypeChip(type: contract.type),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              ContractPage._fmt(contract.amount),
-              style: AppTheme.body.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: contract.amount < 0 ? Tokens.chipRed : Tokens.textPrimary,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: _StatusDot(status: contract.status),
-          ),
         ],
       ),
     );

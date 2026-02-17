@@ -99,7 +99,18 @@ class _SpaceTable extends StatelessWidget {
         ]),
       ),
       const Divider(color: Tokens.glassBorder, height: 1),
-      Expanded(child: ListView.separated(
+      Expanded(child: spaces.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.space_dashboard_outlined, size: 40, color: Tokens.textMuted),
+                  const SizedBox(height: 12),
+                  Text('No space requirements defined.', style: AppTheme.body.copyWith(color: Tokens.textMuted)),
+                ],
+              ),
+            )
+          : ListView.separated(
         padding: const EdgeInsets.only(top: 4),
         itemCount: spaces.length,
         separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),

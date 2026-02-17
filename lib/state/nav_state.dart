@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum NavRoute {
   dashboard,
   projectMap,
+  locationMap,
   // PROJECT ADMIN
   projectTeam,
   contract,
@@ -49,6 +50,8 @@ extension NavRouteLabel on NavRoute {
         return 'Project Dashboard';
       case NavRoute.projectMap:
         return 'Project Map';
+      case NavRoute.locationMap:
+        return 'Location Map';
       case NavRoute.projectTeam:
         return 'Project Team';
       case NavRoute.contract:

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/crud_dialogs.dart';
 import '../models/project_models.dart';
 import '../state/project_providers.dart';
 
@@ -17,69 +18,94 @@ class SchedulePage extends ConsumerWidget {
     final latest = phases.map((p) => p.end).reduce((a, b) => a.isAfter(b) ? a : b);
     final totalDays = latest.difference(earliest).inDays.toDouble();
 
-    return Padding(
-      padding: const EdgeInsets.all(Tokens.spaceLg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(Tokens.spaceLg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('SCHEDULE', style: AppTheme.heading),
-              _LegendChip(color: Tokens.chipGreen, label: 'Complete'),
-              _LegendChip(color: Tokens.chipBlue, label: 'In Progress'),
-              _LegendChip(color: Tokens.textMuted, label: 'Upcoming'),
-            ],
-          ),
-          const SizedBox(height: Tokens.spaceLg),
-          // Phase detail cards
-          Expanded(
-            child: GlassCard(
-              child: Column(
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  // Gantt header months
-                  _MonthHeader(earliest: earliest, latest: latest),
-                  const SizedBox(height: 8),
-                  const Divider(color: Tokens.glassBorder, height: 1),
-                  // Phase rows
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(top: 8),
-                      itemCount: phases.length,
-                      itemBuilder: (context, i) => _PhaseRow(
-                        phase: phases[i],
-                        earliest: earliest,
-                        totalDays: totalDays,
-                      ),
-                    ),
-                  ),
+                  Text('SCHEDULE', style: AppTheme.heading),
+                  _LegendChip(color: Tokens.chipGreen, label: 'Complete'),
+                  _LegendChip(color: Tokens.chipBlue, label: 'In Progress'),
+                  _LegendChip(color: Tokens.textMuted, label: 'Upcoming'),
                 ],
               ),
-            ),
+              const SizedBox(height: Tokens.spaceLg),
+              Expanded(
+                child: GlassCard(
+                  child: Column(
+                    children: [
+                      _MonthHeader(earliest: earliest, latest: latest),
+                      const SizedBox(height: 8),
+                      const Divider(color: Tokens.glassBorder, height: 1),
+                      Expanded(
+                        child: phases.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.calendar_today_outlined, size: 40, color: Tokens.textMuted),
+                                    const SizedBox(height: 12),
+                                    Text('No schedule phases defined.', style: AppTheme.body.copyWith(color: Tokens.textMuted)),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                          padding: const EdgeInsets.only(top: 8),
+                          itemCount: phases.length,
+                          itemBuilder: (context, i) => _PhaseRow(
+                            phase: phases[i],
+                            earliest: earliest,
+                            totalDays: totalDays,
+                            onEdit: () => showSchedulePhaseDialog(context, ref, existing: phases[i]),
+                            onDelete: () async {
+                              final ok = await showDeleteConfirmation(context, phases[i].name);
+                              if (ok) ref.read(scheduleProvider.notifier).remove(phases[i].id);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cards = [
+                    _PhaseStatCard(phases: phases, statusFilter: 'Complete', color: Tokens.chipGreen),
+                    _PhaseStatCard(phases: phases, statusFilter: 'In Progress', color: Tokens.chipBlue),
+                    _PhaseStatCard(phases: phases, statusFilter: 'Upcoming', color: Tokens.textMuted),
+                  ];
+                  if (constraints.maxWidth > 500) {
+                    return Row(children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: c))).toList());
+                  }
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: cards.map((c) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: c)).toList(),
+                  );
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          // Bottom stats row
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final cards = [
-                _PhaseStatCard(phases: phases, statusFilter: 'Complete', color: Tokens.chipGreen),
-                _PhaseStatCard(phases: phases, statusFilter: 'In Progress', color: Tokens.chipBlue),
-                _PhaseStatCard(phases: phases, statusFilter: 'Upcoming', color: Tokens.textMuted),
-              ];
-              if (constraints.maxWidth > 500) {
-                return Row(children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: c))).toList());
-              }
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: cards.map((c) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: c)).toList(),
-              );
-            },
+        ),
+        Positioned(
+          bottom: 24,
+          right: 24,
+          child: FloatingActionButton(
+            backgroundColor: Tokens.accent,
+            onPressed: () => showSchedulePhaseDialog(context, ref),
+            child: const Icon(Icons.add, color: Colors.white),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -140,7 +166,9 @@ class _PhaseRow extends StatelessWidget {
   final SchedulePhase phase;
   final DateTime earliest;
   final double totalDays;
-  const _PhaseRow({required this.phase, required this.earliest, required this.totalDays});
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _PhaseRow({required this.phase, required this.earliest, required this.totalDays, required this.onEdit, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -171,11 +199,9 @@ class _PhaseRow extends StatelessWidget {
               builder: (context, constraints) {
                 return Stack(
                   children: [
-                    // Track
                     Positioned.fill(
                       child: Center(child: Container(height: 1, color: Tokens.glassBorder)),
                     ),
-                    // Full bar
                     Positioned(
                       left: startOffset * constraints.maxWidth,
                       child: Container(
@@ -188,7 +214,6 @@ class _PhaseRow extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Progress fill
                     if (phase.progress > 0)
                       Positioned(
                         left: startOffset * constraints.maxWidth,
@@ -204,6 +229,24 @@ class _PhaseRow extends StatelessWidget {
                   ],
                 );
               },
+            ),
+          ),
+          SizedBox(
+            width: 52,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                InkWell(
+                  onTap: onEdit,
+                  borderRadius: BorderRadius.circular(4),
+                  child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.edit_outlined, size: 14, color: Tokens.textMuted)),
+                ),
+                InkWell(
+                  onTap: onDelete,
+                  borderRadius: BorderRadius.circular(4),
+                  child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.delete_outline, size: 14, color: Tokens.chipRed)),
+                ),
+              ],
             ),
           ),
         ],

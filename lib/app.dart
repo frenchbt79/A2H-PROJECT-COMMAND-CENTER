@@ -22,8 +22,10 @@ import 'widgets/global_search.dart';
 import 'widgets/notification_panel.dart';
 import 'pages/settings_page.dart';
 import 'pages/project_map_page.dart';
+import 'pages/location_map_page.dart';
 import 'pages/change_orders_page.dart';
 import 'pages/submittals_page.dart';
+import 'pages/specs_page.dart';
 import 'widgets/info_bar.dart';
 
 class App extends StatelessWidget {
@@ -204,6 +206,7 @@ Widget _buildPage(NavRoute route) {
     // Dashboard
     NavRoute.dashboard => const DashboardPage(),
     NavRoute.projectMap => const ProjectMapPage(),
+    NavRoute.locationMap => const LocationMapPage(),
     // Project Admin
     NavRoute.projectTeam => const TeamPage(),
     NavRoute.contract => const ContractPage(),
@@ -229,7 +232,7 @@ Widget _buildPage(NavRoute route) {
     // Deliverables & Media
     NavRoute.progressPrints => const PrintSetsPage(printType: 'Progress', title: 'Progress Prints'),
     NavRoute.signedPrints => const PrintSetsPage(printType: 'Signed/Sealed', title: 'Signed & Sealed Prints'),
-    NavRoute.specs => const DocumentRegistryPage(title: 'Specifications', filterPhase: ''),
+    NavRoute.specs => const SpecsPage(),
     NavRoute.renderings => const RenderingsPage(),
     // Construction Admin
     NavRoute.rfis => const RfiPage(),

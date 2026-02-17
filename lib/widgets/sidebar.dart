@@ -82,6 +82,15 @@ class Sidebar extends ConsumerWidget {
               onItemSelected?.call();
             },
           ),
+          SidebarItem(
+            label: NavRoute.locationMap.label,
+            icon: Icons.location_on_outlined,
+            isActive: navState.selectedRoute == NavRoute.locationMap,
+            onTap: () {
+              navNotifier.selectPage(NavRoute.locationMap);
+              onItemSelected?.call();
+            },
+          ),
           const SizedBox(height: 4),
 
           // ── Groups ───────────────────────────────────

@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/crud_dialogs.dart';
 import '../state/project_providers.dart';
 import '../models/project_models.dart';
 
-/// Serves 6 discipline routes: Architectural, Civil, Landscape,
-/// Mechanical, Electrical, Plumbing.
+/// Serves 7 discipline routes: Architectural, Civil, Landscape,
+/// Mechanical, Electrical, Plumbing, Fire Protection.
 class DisciplinePage extends ConsumerWidget {
   final String disciplineName;
   final IconData icon;
@@ -28,36 +29,46 @@ class DisciplinePage extends ConsumerWidget {
     final inProgress = sheets.where((s) => s.status == 'In Progress').length;
     final review = sheets.where((s) => s.status == 'Review').length;
 
-    return Padding(
-      padding: const EdgeInsets.all(Tokens.spaceLg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ────────────────────────────────────────
-          Row(
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(Tokens.spaceLg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: accentColor, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(disciplineName.toUpperCase(), style: AppTheme.heading, overflow: TextOverflow.ellipsis),
+              Row(
+                children: [
+                  Icon(icon, color: accentColor, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(disciplineName.toUpperCase(), style: AppTheme.heading, overflow: TextOverflow.ellipsis),
+                  ),
+                  _CountChip(label: 'Current', count: current, color: Tokens.chipGreen),
+                  const SizedBox(width: 8),
+                  _CountChip(label: 'In Progress', count: inProgress, color: Tokens.chipYellow),
+                  if (review > 0) ...[
+                    const SizedBox(width: 8),
+                    _CountChip(label: 'Review', count: review, color: Tokens.chipBlue),
+                  ],
+                ],
               ),
-              _CountChip(label: 'Current', count: current, color: Tokens.chipGreen),
-              const SizedBox(width: 8),
-              _CountChip(label: 'In Progress', count: inProgress, color: Tokens.chipYellow),
-              if (review > 0) ...[
-                const SizedBox(width: 8),
-                _CountChip(label: 'Review', count: review, color: Tokens.chipBlue),
-              ],
+              const SizedBox(height: Tokens.spaceMd),
+              _buildSummaryRow(sheets),
+              const SizedBox(height: Tokens.spaceMd),
+              Expanded(child: _buildDrawingTable(context, ref, sheets)),
             ],
           ),
-          const SizedBox(height: Tokens.spaceMd),
-          // ── Summary tiles ─────────────────────────────────
-          _buildSummaryRow(sheets),
-          const SizedBox(height: Tokens.spaceMd),
-          // ── Drawing index ─────────────────────────────────
-          Expanded(child: _buildDrawingTable(sheets)),
-        ],
-      ),
+        ),
+        Positioned(
+          bottom: 24,
+          right: 24,
+          child: FloatingActionButton(
+            backgroundColor: accentColor,
+            onPressed: () => showDrawingSheetDialog(context, ref, discipline: disciplineName),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 
@@ -117,11 +128,10 @@ class DisciplinePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildDrawingTable(List<DrawingSheet> sheets) {
+  Widget _buildDrawingTable(BuildContext context, WidgetRef ref, List<DrawingSheet> sheets) {
     return GlassCard(
       child: Column(
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(
@@ -132,6 +142,7 @@ class DisciplinePage extends ConsumerWidget {
                 SizedBox(width: 50, child: Text('REV', style: AppTheme.sidebarGroupLabel)),
                 SizedBox(width: 90, child: Text('LAST REVISED', style: AppTheme.sidebarGroupLabel)),
                 SizedBox(width: 80, child: Text('STATUS', style: AppTheme.sidebarGroupLabel)),
+                const SizedBox(width: 60),
               ],
             ),
           ),
@@ -193,6 +204,33 @@ class DisciplinePage extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                            SizedBox(
+                              width: 60,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  InkWell(
+                                    onTap: () => showDrawingSheetDialog(context, ref, existing: s, discipline: disciplineName),
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: const Padding(
+                                      padding: EdgeInsets.all(4),
+                                      child: Icon(Icons.edit_outlined, size: 15, color: Tokens.textMuted),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      final ok = await showDeleteConfirmation(context, s.sheetNumber);
+                                      if (ok) ref.read(drawingSheetsProvider.notifier).remove(s.id);
+                                    },
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: const Padding(
+                                      padding: EdgeInsets.all(4),
+                                      child: Icon(Icons.delete_outline, size: 15, color: Tokens.chipRed),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -236,3 +274,4 @@ class _CountChip extends StatelessWidget {
     );
   }
 }
+

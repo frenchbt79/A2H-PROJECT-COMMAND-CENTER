@@ -85,28 +85,100 @@ final rfisProvider = StateNotifierProvider<RfiNotifier, List<RfiItem>>((ref) {
 // READ-ONLY PROVIDERS (load from storage or seed defaults)
 // ═══════════════════════════════════════════════════════════
 
-final contractsProvider = Provider<List<ContractItem>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadContracts();
-  if (saved.isNotEmpty) return saved;
-  storage.saveContracts(DefaultData.contracts);
-  return DefaultData.contracts;
+class ContractNotifier extends StateNotifier<List<ContractItem>> {
+  final StorageService _storage;
+
+  ContractNotifier(this._storage) : super([]) {
+    final saved = _storage.loadContracts();
+    state = saved.isNotEmpty ? saved : DefaultData.contracts;
+    if (saved.isEmpty) _storage.saveContracts(state);
+  }
+
+  void add(ContractItem item) {
+    state = [...state, item];
+    _storage.saveContracts(state);
+  }
+
+  void remove(String id) {
+    state = state.where((c) => c.id != id).toList();
+    _storage.saveContracts(state);
+  }
+
+  void update(ContractItem item) {
+    state = [
+      for (final c in state)
+        if (c.id == item.id) item else c,
+    ];
+    _storage.saveContracts(state);
+  }
+}
+
+final contractsProvider = StateNotifierProvider<ContractNotifier, List<ContractItem>>((ref) {
+  return ContractNotifier(ref.watch(storageServiceProvider));
 });
 
-final scheduleProvider = Provider<List<SchedulePhase>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadSchedule();
-  if (saved.isNotEmpty) return saved;
-  storage.saveSchedule(DefaultData.schedule);
-  return DefaultData.schedule;
+class ScheduleNotifier extends StateNotifier<List<SchedulePhase>> {
+  final StorageService _storage;
+
+  ScheduleNotifier(this._storage) : super([]) {
+    final saved = _storage.loadSchedule();
+    state = saved.isNotEmpty ? saved : DefaultData.schedule;
+    if (saved.isEmpty) _storage.saveSchedule(state);
+  }
+
+  void add(SchedulePhase item) {
+    state = [...state, item];
+    _storage.saveSchedule(state);
+  }
+
+  void remove(String id) {
+    state = state.where((s) => s.id != id).toList();
+    _storage.saveSchedule(state);
+  }
+
+  void update(SchedulePhase item) {
+    state = [
+      for (final s in state)
+        if (s.id == item.id) item else s,
+    ];
+    _storage.saveSchedule(state);
+  }
+}
+
+final scheduleProvider = StateNotifierProvider<ScheduleNotifier, List<SchedulePhase>>((ref) {
+  return ScheduleNotifier(ref.watch(storageServiceProvider));
 });
 
-final budgetProvider = Provider<List<BudgetLine>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadBudget();
-  if (saved.isNotEmpty) return saved;
-  storage.saveBudget(DefaultData.budget);
-  return DefaultData.budget;
+class BudgetNotifier extends StateNotifier<List<BudgetLine>> {
+  final StorageService _storage;
+
+  BudgetNotifier(this._storage) : super([]) {
+    final saved = _storage.loadBudget();
+    state = saved.isNotEmpty ? saved : DefaultData.budget;
+    if (saved.isEmpty) _storage.saveBudget(state);
+  }
+
+  void add(BudgetLine item) {
+    state = [...state, item];
+    _storage.saveBudget(state);
+  }
+
+  void remove(String id) {
+    state = state.where((b) => b.id != id).toList();
+    _storage.saveBudget(state);
+  }
+
+  void update(BudgetLine item) {
+    state = [
+      for (final b in state)
+        if (b.id == item.id) item else b,
+    ];
+    _storage.saveBudget(state);
+  }
+}
+
+final budgetProvider = StateNotifierProvider<BudgetNotifier, List<BudgetLine>>((ref) {
+  return BudgetNotifier(ref.watch(storageServiceProvider));
 });
 
 final deadlinesProvider = Provider<List<Deadline>>((ref) {
@@ -117,12 +189,36 @@ final deadlinesProvider = Provider<List<Deadline>>((ref) {
   return DefaultData.deadlines;
 });
 
-final drawingSheetsProvider = Provider<List<DrawingSheet>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadDrawingSheets();
-  if (saved.isNotEmpty) return saved;
-  storage.saveDrawingSheets(DefaultData.drawingSheets);
-  return DefaultData.drawingSheets;
+class DrawingSheetNotifier extends StateNotifier<List<DrawingSheet>> {
+  final StorageService _storage;
+
+  DrawingSheetNotifier(this._storage) : super([]) {
+    final saved = _storage.loadDrawingSheets();
+    state = saved.isNotEmpty ? saved : DefaultData.drawingSheets;
+    if (saved.isEmpty) _storage.saveDrawingSheets(state);
+  }
+
+  void add(DrawingSheet item) {
+    state = [...state, item];
+    _storage.saveDrawingSheets(state);
+  }
+
+  void remove(String id) {
+    state = state.where((d) => d.id != id).toList();
+    _storage.saveDrawingSheets(state);
+  }
+
+  void update(DrawingSheet item) {
+    state = [
+      for (final d in state)
+        if (d.id == item.id) item else d,
+    ];
+    _storage.saveDrawingSheets(state);
+  }
+}
+
+final drawingSheetsProvider = StateNotifierProvider<DrawingSheetNotifier, List<DrawingSheet>>((ref) {
+  return DrawingSheetNotifier(ref.watch(storageServiceProvider));
 });
 
 final printSetsProvider = Provider<List<PrintSet>>((ref) {
@@ -141,12 +237,45 @@ final renderingsProvider = Provider<List<RenderingItem>>((ref) {
   return DefaultData.renderings;
 });
 
-final asisProvider = Provider<List<AsiItem>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadAsis();
-  if (saved.isNotEmpty) return saved;
-  storage.saveAsis(DefaultData.asis);
-  return DefaultData.asis;
+class AsiNotifier extends StateNotifier<List<AsiItem>> {
+  final StorageService _storage;
+
+  AsiNotifier(this._storage) : super([]) {
+    final saved = _storage.loadAsis();
+    state = saved.isNotEmpty ? saved : DefaultData.asis;
+    if (saved.isEmpty) _storage.saveAsis(state);
+  }
+
+  void add(AsiItem item) {
+    state = [...state, item];
+    _storage.saveAsis(state);
+  }
+
+  void remove(String id) {
+    state = state.where((a) => a.id != id).toList();
+    _storage.saveAsis(state);
+  }
+
+  void update(AsiItem item) {
+    state = [
+      for (final a in state)
+        if (a.id == item.id) item else a,
+    ];
+    _storage.saveAsis(state);
+  }
+
+  String nextNumber() {
+    final nums = state.map((a) {
+      final match = RegExp(r'ASI-(\d+)').firstMatch(a.number);
+      return match != null ? int.parse(match.group(1)!) : 0;
+    });
+    final max = nums.isEmpty ? 0 : nums.reduce((a, b) => a > b ? a : b);
+    return 'ASI-${(max + 1).toString().padLeft(3, '0')}';
+  }
+}
+
+final asisProvider = StateNotifierProvider<AsiNotifier, List<AsiItem>>((ref) {
+  return AsiNotifier(ref.watch(storageServiceProvider));
 });
 
 final spaceRequirementsProvider = Provider<List<SpaceRequirement>>((ref) {
@@ -166,27 +295,93 @@ final projectInfoProvider = Provider<List<ProjectInfoEntry>>((ref) {
 });
 
 // ═══════════════════════════════════════════════════════════
-// CHANGE ORDERS
+// CHANGE ORDERS (Mutable)
 // ═══════════════════════════════════════════════════════════
 
-final changeOrdersProvider = Provider<List<ChangeOrder>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadChangeOrders();
-  if (saved.isNotEmpty) return saved;
-  storage.saveChangeOrders(DefaultData.changeOrders);
-  return DefaultData.changeOrders;
+class ChangeOrderNotifier extends StateNotifier<List<ChangeOrder>> {
+  final StorageService _storage;
+
+  ChangeOrderNotifier(this._storage) : super([]) {
+    final saved = _storage.loadChangeOrders();
+    state = saved.isNotEmpty ? saved : DefaultData.changeOrders;
+    if (saved.isEmpty) _storage.saveChangeOrders(state);
+  }
+
+  void add(ChangeOrder item) {
+    state = [...state, item];
+    _storage.saveChangeOrders(state);
+  }
+
+  void remove(String id) {
+    state = state.where((c) => c.id != id).toList();
+    _storage.saveChangeOrders(state);
+  }
+
+  void update(ChangeOrder item) {
+    state = [
+      for (final c in state)
+        if (c.id == item.id) item else c,
+    ];
+    _storage.saveChangeOrders(state);
+  }
+
+  String nextNumber() {
+    final nums = state.map((c) {
+      final match = RegExp(r'CO-(\d+)').firstMatch(c.number);
+      return match != null ? int.parse(match.group(1)!) : 0;
+    });
+    final max = nums.isEmpty ? 0 : nums.reduce((a, b) => a > b ? a : b);
+    return 'CO-${(max + 1).toString().padLeft(3, '0')}';
+  }
+}
+
+final changeOrdersProvider = StateNotifierProvider<ChangeOrderNotifier, List<ChangeOrder>>((ref) {
+  return ChangeOrderNotifier(ref.watch(storageServiceProvider));
 });
 
 // ═══════════════════════════════════════════════════════════
-// SUBMITTALS
+// SUBMITTALS (Mutable)
 // ═══════════════════════════════════════════════════════════
 
-final submittalsProvider = Provider<List<SubmittalItem>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadSubmittals();
-  if (saved.isNotEmpty) return saved;
-  storage.saveSubmittals(DefaultData.submittals);
-  return DefaultData.submittals;
+class SubmittalNotifier extends StateNotifier<List<SubmittalItem>> {
+  final StorageService _storage;
+
+  SubmittalNotifier(this._storage) : super([]) {
+    final saved = _storage.loadSubmittals();
+    state = saved.isNotEmpty ? saved : DefaultData.submittals;
+    if (saved.isEmpty) _storage.saveSubmittals(state);
+  }
+
+  void add(SubmittalItem item) {
+    state = [...state, item];
+    _storage.saveSubmittals(state);
+  }
+
+  void remove(String id) {
+    state = state.where((s) => s.id != id).toList();
+    _storage.saveSubmittals(state);
+  }
+
+  void update(SubmittalItem item) {
+    state = [
+      for (final s in state)
+        if (s.id == item.id) item else s,
+    ];
+    _storage.saveSubmittals(state);
+  }
+
+  String nextNumber() {
+    final nums = state.map((s) {
+      final match = RegExp(r'SUB-(\d+)').firstMatch(s.number);
+      return match != null ? int.parse(match.group(1)!) : 0;
+    });
+    final max = nums.isEmpty ? 0 : nums.reduce((a, b) => a > b ? a : b);
+    return 'SUB-${(max + 1).toString().padLeft(3, '0')}';
+  }
+}
+
+final submittalsProvider = StateNotifierProvider<SubmittalNotifier, List<SubmittalItem>>((ref) {
+  return SubmittalNotifier(ref.watch(storageServiceProvider));
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -194,21 +389,30 @@ final submittalsProvider = Provider<List<SubmittalItem>>((ref) {
 // ═══════════════════════════════════════════════════════════
 
 class ActivityNotifier extends StateNotifier<List<ActivityItem>> {
-  ActivityNotifier() : super(_defaultActivities);
+  final StorageService _storage;
+
+  ActivityNotifier(this._storage) : super([]) {
+    final saved = _storage.loadActivities();
+    state = saved.isNotEmpty ? saved : _defaultActivities;
+    if (saved.isEmpty) _storage.saveActivities(state);
+  }
 
   void markRead(String id) {
     state = [
       for (final a in state)
         if (a.id == id) a.copyWith(isRead: true) else a,
     ];
+    _storage.saveActivities(state);
   }
 
   void markAllRead() {
     state = [for (final a in state) a.copyWith(isRead: true)];
+    _storage.saveActivities(state);
   }
 
   void addActivity(ActivityItem item) {
     state = [item, ...state];
+    _storage.saveActivities(state);
   }
 
   static final _defaultActivities = [
@@ -224,7 +428,7 @@ class ActivityNotifier extends StateNotifier<List<ActivityItem>> {
 }
 
 final activityProvider = StateNotifierProvider<ActivityNotifier, List<ActivityItem>>((ref) {
-  return ActivityNotifier();
+  return ActivityNotifier(ref.watch(storageServiceProvider));
 });
 
 final unreadCountProvider = Provider<int>((ref) {

@@ -35,18 +35,49 @@ class ProjectInfoPage extends ConsumerWidget {
           const SizedBox(height: Tokens.spaceLg),
           Expanded(
             child: LayoutBuilder(builder: (context, constraints) {
-              final crossCount = constraints.maxWidth > 800 ? 2 : 1;
-              return GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossCount,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: crossCount == 2 ? 1.8 : 2.5,
-                ),
-                itemCount: categories.length,
-                itemBuilder: (_, i) => _CategoryCard(
-                  category: categories[i],
-                  entries: grouped[categories[i]]!,
+              final isWide = constraints.maxWidth > 800;
+              if (!isWide) {
+                return ListView.separated(
+                  itemCount: categories.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  itemBuilder: (_, i) => _CategoryCard(
+                    category: categories[i],
+                    entries: grouped[categories[i]]!,
+                  ),
+                );
+              }
+              // Two-column masonry-style layout
+              final leftCats = <String>[];
+              final rightCats = <String>[];
+              for (var i = 0; i < categories.length; i++) {
+                if (i % 2 == 0) {
+                  leftCats.add(categories[i]);
+                } else {
+                  rightCats.add(categories[i]);
+                }
+              }
+              return SingleChildScrollView(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: leftCats.map((cat) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _CategoryCard(category: cat, entries: grouped[cat]!),
+                        )).toList(),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        children: rightCats.map((cat) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _CategoryCard(category: cat, entries: grouped[cat]!),
+                        )).toList(),
+                      ),
+                    ),
+                  ],
                 ),
               );
             }),
@@ -101,7 +132,7 @@ class _CategoryCard extends StatelessWidget {
                   child: Text(e.label, style: AppTheme.caption.copyWith(fontSize: 11, color: Tokens.textMuted)),
                 ),
                 Expanded(
-                  child: Text(e.value, style: AppTheme.body.copyWith(fontSize: 12)),
+                  child: Text(e.value, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 2),
                 ),
               ],
             ),

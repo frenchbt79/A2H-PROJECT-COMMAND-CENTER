@@ -39,6 +39,18 @@ class RenderingsPage extends ConsumerWidget {
                   : constraints.maxWidth > 550
                       ? 2
                       : 1;
+              if (renderings.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.panorama_outlined, size: 40, color: Tokens.textMuted),
+                      const SizedBox(height: 12),
+                      Text('No renderings yet', style: AppTheme.body.copyWith(color: Tokens.textMuted)),
+                    ],
+                  ),
+                );
+              }
               return GridView.builder(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossCount,

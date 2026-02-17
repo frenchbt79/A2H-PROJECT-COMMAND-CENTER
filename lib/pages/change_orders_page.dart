@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/crud_dialogs.dart';
 import '../state/project_providers.dart';
 
 class ChangeOrdersPage extends ConsumerStatefulWidget {
@@ -119,142 +120,205 @@ class _ChangeOrdersPageState extends ConsumerState<ChangeOrdersPage> {
         .where((c) => c.status == 'Pending')
         .fold<double>(0, (sum, c) => sum + c.amount);
 
-    return Padding(
-      padding: const EdgeInsets.all(Tokens.spaceLg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(Tokens.spaceLg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.swap_horiz, color: Tokens.accent, size: 22),
-              const SizedBox(width: 2),
-              Text('Change Orders', style: AppTheme.heading),
-              const SizedBox(width: 16),
-              _CountChip(label: 'All', count: items.length, color: Tokens.chipBlue, isSelected: _statusFilter == null, onTap: () => _onFilterTap(null)),
-              _CountChip(label: 'Approved', count: approved, color: Tokens.chipGreen, isSelected: _statusFilter == 'Approved', onTap: () => _onFilterTap('Approved')),
-              _CountChip(label: 'Pending', count: pending, color: Tokens.chipYellow, isSelected: _statusFilter == 'Pending', onTap: () => _onFilterTap('Pending')),
-              if (rejected > 0)
-                _CountChip(label: 'Rejected', count: rejected, color: Tokens.chipRed, isSelected: _statusFilter == 'Rejected', onTap: () => _onFilterTap('Rejected')),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _SummaryTile(label: 'Approved Total', value: _currencyFormat.format(totalApproved), color: Tokens.chipGreen),
-              const SizedBox(width: 12),
-              _SummaryTile(label: 'Pending Total', value: _currencyFormat.format(totalPending), color: Tokens.chipYellow),
-              const SizedBox(width: 12),
-              _SummaryTile(label: 'Net Change', value: _currencyFormat.format(totalApproved + totalPending), color: Tokens.accent),
-            ],
-          ),
-          const SizedBox(height: Tokens.spaceLg),
-          Expanded(
-            child: GlassCard(
-              child: Column(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        _buildSortableHeader('CO #', 'number', width: 70),
-                        _buildSortableHeader('DESCRIPTION', 'description', flex: 4),
-                        _buildSortableHeader('AMOUNT', 'amount', width: 100),
-                        _buildSortableHeader('REASON', 'reason', flex: 2),
-                        _buildSortableHeader('INITIATED BY', 'initiatedBy', flex: 2),
-                        _buildSortableHeader('DATE', 'date', width: 90),
-                        _buildSortableHeader('STATUS', 'status', width: 80),
-                      ],
-                    ),
-                  ),
-                  const Divider(color: Tokens.glassBorder, height: 1),
-                  Expanded(
-                    child: displayList.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No change orders match the current filter.',
-                              style: AppTheme.caption.copyWith(color: Tokens.textMuted),
-                            ),
-                          )
-                        : ListView.separated(
-                      padding: const EdgeInsets.only(top: 8),
-                      itemCount: displayList.length,
-                      separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
-                      itemBuilder: (context, i) {
-                        final co = displayList[i];
-                        final statusColor = switch (co.status) {
-                          'Approved' => Tokens.chipGreen,
-                          'Pending' => Tokens.chipYellow,
-                          'Rejected' => Tokens.chipRed,
-                          _ => Tokens.textMuted,
-                        };
-                        final amountColor = co.amount >= 0 ? Tokens.chipRed : Tokens.chipGreen;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 70,
-                                child: Text(
-                                  co.number,
-                                  style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: Tokens.accent),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 4,
-                                child: Text(co.description, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 2),
-                              ),
-                              SizedBox(
-                                width: 100,
-                                child: Text(
-                                  '${co.amount >= 0 ? '+' : ''}${_currencyFormat.format(co.amount)}',
-                                  style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: amountColor),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(co.reason ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(co.initiatedBy ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
-                              ),
-                              SizedBox(
-                                width: 90,
-                                child: Text(
-                                  '${co.dateSubmitted.month}/${co.dateSubmitted.day}/${co.dateSubmitted.year}',
-                                  style: AppTheme.caption.copyWith(fontSize: 10),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 80,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(Tokens.radiusSm),
-                                  ),
-                                  child: Text(
-                                    co.status,
-                                    style: AppTheme.caption.copyWith(fontSize: 10, color: statusColor),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                  const Icon(Icons.swap_horiz, color: Tokens.accent, size: 22),
+                  const SizedBox(width: 2),
+                  Text('Change Orders', style: AppTheme.heading),
+                  const SizedBox(width: 16),
+                  _CountChip(label: 'All', count: items.length, color: Tokens.chipBlue, isSelected: _statusFilter == null, onTap: () => _onFilterTap(null)),
+                  _CountChip(label: 'Approved', count: approved, color: Tokens.chipGreen, isSelected: _statusFilter == 'Approved', onTap: () => _onFilterTap('Approved')),
+                  _CountChip(label: 'Pending', count: pending, color: Tokens.chipYellow, isSelected: _statusFilter == 'Pending', onTap: () => _onFilterTap('Pending')),
+                  if (rejected > 0)
+                    _CountChip(label: 'Rejected', count: rejected, color: Tokens.chipRed, isSelected: _statusFilter == 'Rejected', onTap: () => _onFilterTap('Rejected')),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final tiles = [
+                    _SummaryTile(label: 'Approved Total', value: _currencyFormat.format(totalApproved), color: Tokens.chipGreen),
+                    _SummaryTile(label: 'Pending Total', value: _currencyFormat.format(totalPending), color: Tokens.chipYellow),
+                    _SummaryTile(label: 'Net Change', value: _currencyFormat.format(totalApproved + totalPending), color: Tokens.accent),
+                  ];
+                  if (constraints.maxWidth > 500) {
+                    return Row(children: tiles.map((t) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: t))).toList());
+                  }
+                  return Wrap(spacing: 12, runSpacing: 12, children: tiles.map((t) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: t)).toList());
+                },
+              ),
+              const SizedBox(height: Tokens.spaceLg),
+              Expanded(
+                child: GlassCard(
+                  child: LayoutBuilder(
+                    builder: (context, outerConstraints) {
+                      final minTableWidth = outerConstraints.maxWidth < 700 ? 700.0 : outerConstraints.maxWidth;
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: minTableWidth,
+                          child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          children: [
+                            _buildSortableHeader('CO #', 'number', width: 70),
+                            _buildSortableHeader('DESCRIPTION', 'description', flex: 4),
+                            _buildSortableHeader('AMOUNT', 'amount', width: 100),
+                            _buildSortableHeader('REASON', 'reason', flex: 2),
+                            _buildSortableHeader('INITIATED BY', 'initiatedBy', flex: 2),
+                            _buildSortableHeader('DATE', 'date', width: 90),
+                            _buildSortableHeader('STATUS', 'status', width: 80),
+                            const SizedBox(width: 60),
+                          ],
+                        ),
+                      ),
+                      const Divider(color: Tokens.glassBorder, height: 1),
+                      Expanded(
+                        child: displayList.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.swap_horiz, size: 40, color: Tokens.textMuted),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No change orders match the current filter.',
+                                      style: AppTheme.body.copyWith(color: Tokens.textMuted),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.separated(
+                          padding: const EdgeInsets.only(top: 8),
+                          itemCount: displayList.length,
+                          separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
+                          itemBuilder: (context, i) {
+                            final co = displayList[i];
+                            final statusColor = switch (co.status) {
+                              'Approved' => Tokens.chipGreen,
+                              'Pending' => Tokens.chipYellow,
+                              'Rejected' => Tokens.chipRed,
+                              _ => Tokens.textMuted,
+                            };
+                            final amountColor = co.amount >= 0 ? Tokens.chipRed : Tokens.chipGreen;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 70,
+                                    child: Text(
+                                      co.number,
+                                      style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: Tokens.accent),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 4,
+                                    child: Text(co.description, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
+                                  SizedBox(
+                                    width: 100,
+                                    child: Text(
+                                      '${co.amount >= 0 ? '+' : ''}${_currencyFormat.format(co.amount)}',
+                                      style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: amountColor),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(co.reason ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(co.initiatedBy ?? '\u2014', style: AppTheme.caption.copyWith(fontSize: 11)),
+                                  ),
+                                  SizedBox(
+                                    width: 90,
+                                    child: Text(
+                                      '${co.dateSubmitted.month}/${co.dateSubmitted.day}/${co.dateSubmitted.year}',
+                                      style: AppTheme.caption.copyWith(fontSize: 10),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 80,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: statusColor.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                                      ),
+                                      child: Text(
+                                        co.status,
+                                        style: AppTheme.caption.copyWith(fontSize: 10, color: statusColor),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 60,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        InkWell(
+                                          onTap: () => showChangeOrderDialog(context, ref, existing: co),
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(4),
+                                            child: Icon(Icons.edit_outlined, size: 15, color: Tokens.textMuted),
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: () async {
+                                            final ok = await showDeleteConfirmation(context, co.number);
+                                            if (ok) ref.read(changeOrdersProvider.notifier).remove(co.id);
+                                          },
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(4),
+                                            child: Icon(Icons.delete_outline, size: 15, color: Tokens.chipRed),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              },
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          bottom: 24,
+          right: 24,
+          child: FloatingActionButton(
+            backgroundColor: Tokens.accent,
+            onPressed: () => showChangeOrderDialog(context, ref),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -268,16 +332,14 @@ class _SummaryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: AppTheme.sidebarGroupLabel),
-            const SizedBox(height: 4),
-            Text(value, style: AppTheme.heading.copyWith(fontSize: 18, color: color)),
-          ],
-        ),
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTheme.sidebarGroupLabel),
+          const SizedBox(height: 4),
+          Text(value, style: AppTheme.heading.copyWith(fontSize: 18, color: color)),
+        ],
       ),
     );
   }
