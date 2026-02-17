@@ -32,7 +32,7 @@ class _SidebarItemState extends State<SidebarItem> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: const Duration(milliseconds: 100),
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -47,7 +47,7 @@ class _SidebarItemState extends State<SidebarItem> {
             children: [
               // Left accent bar for active
               AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: const Duration(milliseconds: 100),
                 width: 3,
                 height: 18,
                 margin: const EdgeInsets.only(right: 10),

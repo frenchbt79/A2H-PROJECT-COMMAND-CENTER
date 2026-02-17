@@ -128,18 +128,9 @@ class _DesktopLayout extends StatelessWidget {
               // Page content
               Expanded(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 150),
                   switchInCurve: Curves.easeOut,
                   switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(begin: const Offset(0.02, 0), end: Offset.zero).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
                   child: KeyedSubtree(
                     key: ValueKey(navState.selectedRoute),
                     child: _buildPage(navState.selectedRoute),
@@ -186,7 +177,7 @@ class _MobileLayout extends StatelessWidget {
         const InfoBar(),
         Expanded(
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
+            duration: const Duration(milliseconds: 150),
             child: KeyedSubtree(
               key: ValueKey(navState.selectedRoute),
               child: _buildPage(navState.selectedRoute),

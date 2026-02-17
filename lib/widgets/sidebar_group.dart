@@ -42,7 +42,7 @@ class SidebarGroupWidget extends StatelessWidget {
                   ),
                   AnimatedRotation(
                     turns: isExpanded ? 0.0 : -0.25,
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 120),
                     child: Icon(
                       Icons.expand_more,
                       size: 16,
@@ -67,7 +67,7 @@ class SidebarGroupWidget extends StatelessWidget {
           ),
           secondChild: const SizedBox.shrink(),
           crossFadeState: isExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 120),
         ),
       ],
     );
