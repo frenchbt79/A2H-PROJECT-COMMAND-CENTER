@@ -39,8 +39,6 @@ enum NavRoute {
   punchlists,
   // Standalone action
   importProjectInformation,
-  // AI Tools
-  titleBlockReader,
   // Settings
   settings,
 }
@@ -110,8 +108,6 @@ extension NavRouteLabel on NavRoute {
         return 'Punchlists';
       case NavRoute.importProjectInformation:
         return 'Import Project Information';
-      case NavRoute.titleBlockReader:
-        return 'AI Title Block Reader';
       case NavRoute.settings:
         return 'Settings';
     }
@@ -162,9 +158,6 @@ const List<SidebarGroup> sidebarGroups = [
     NavRoute.changeOrders,
     NavRoute.submittals,
     NavRoute.punchlists,
-  ]),
-  SidebarGroup(id: 'ai', label: 'AI TOOLS', items: [
-    NavRoute.titleBlockReader,
   ]),
 ];
 
