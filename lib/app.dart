@@ -26,6 +26,7 @@ import 'pages/settings_page.dart';
 import 'pages/specs_page.dart';
 import 'pages/photos_gallery_page.dart';
 import 'pages/ca_list_page.dart';
+import 'pages/title_block_reader_page.dart';
 import 'widgets/scanned_files_view.dart';
 import 'widgets/keyboard_shortcuts_help.dart';
 import 'widgets/info_bar.dart';
@@ -1079,6 +1080,7 @@ Widget _buildPage(NavRoute route) {
     ),
     // Import (not a real page route — handled by dialog)
     NavRoute.importProjectInformation => const FilesPage(),
+    NavRoute.titleBlockReader => const TitleBlockReaderPage(),
     NavRoute.settings => const SettingsPage(),
   };
 }

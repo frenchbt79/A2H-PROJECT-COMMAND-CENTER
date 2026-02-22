@@ -5,7 +5,9 @@ import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../services/storage_service.dart';
+import '../services/ai_service.dart';
 import '../state/folder_scan_providers.dart';
+import '../state/ai_providers.dart';
 import '../main.dart' show storageServiceProvider, scanCacheServiceProvider;
 import '../constants.dart';
 
@@ -160,6 +162,12 @@ class SettingsPage extends ConsumerWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: Tokens.spaceLg),
+
+                // AI Integration
+                _SectionHeader(title: 'AI INTEGRATION'),
+                const SizedBox(height: 8),
+                _AiSettingsCard(),
                 const SizedBox(height: Tokens.spaceLg),
 
                 // About
@@ -424,6 +432,317 @@ class _ActionRow extends StatelessWidget {
             ),
             Icon(Icons.chevron_right, size: 18, color: Tokens.textMuted),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI Settings Card — API key, model selection, test connection
+// ═══════════════════════════════════════════════════════════════
+class _AiSettingsCard extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_AiSettingsCard> createState() => _AiSettingsCardState();
+}
+
+class _AiSettingsCardState extends ConsumerState<_AiSettingsCard> {
+  final _keyCtrl = TextEditingController();
+  bool _obscureKey = true;
+  bool _testing = false;
+  String? _testResult;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill with masked key if one exists
+    final ai = ref.read(aiServiceProvider);
+    final key = ai.getApiKey();
+    if (key != null) {
+      _keyCtrl.text = key;
+    }
+  }
+
+  @override
+  void dispose() {
+    _keyCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ai = ref.watch(aiServiceProvider);
+    final hasKey = ref.watch(aiHasKeyProvider);
+    final enabled = ref.watch(aiEnabledProvider);
+    final model = ref.watch(aiModelProvider);
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Enable/Disable toggle
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome, size: 18,
+                    color: enabled && hasKey ? Tokens.accent : Tokens.textMuted),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('AI Features', style: AppTheme.body.copyWith(
+                        fontSize: 13,
+                        color: enabled && hasKey ? Tokens.accent : Tokens.textSecondary,
+                      )),
+                      Text(
+                        hasKey
+                            ? (enabled ? 'Active — using ${_modelLabel(model)}' : 'Disabled')
+                            : 'Add an API key to enable AI features',
+                        style: AppTheme.caption.copyWith(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: enabled,
+                  activeColor: Tokens.accent,
+                  onChanged: hasKey ? (v) async {
+                    await ai.setEnabled(v);
+                    ref.read(aiEnabledProvider.notifier).state = v;
+                  } : null,
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Tokens.glassBorder, height: 1),
+
+          // API Key input
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Anthropic API Key', style: AppTheme.caption.copyWith(
+                    fontSize: 11, color: Tokens.textMuted)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _keyCtrl,
+                        obscureText: _obscureKey,
+                        style: AppTheme.body.copyWith(fontSize: 12, fontFamily: 'monospace'),
+                        decoration: InputDecoration(
+                          hintText: 'sk-ant-api03-...',
+                          hintStyle: AppTheme.caption.copyWith(fontSize: 11, color: Tokens.textMuted),
+                          filled: true,
+                          fillColor: Tokens.bgDark,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                            borderSide: const BorderSide(color: Tokens.glassBorder),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                            borderSide: const BorderSide(color: Tokens.glassBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                            borderSide: const BorderSide(color: Tokens.accent),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureKey ? Icons.visibility_off : Icons.visibility,
+                              size: 18, color: Tokens.textMuted,
+                            ),
+                            onPressed: () => setState(() => _obscureKey = !_obscureKey),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _SmallButton(
+                      label: 'Save',
+                      icon: Icons.save_outlined,
+                      onTap: () async {
+                        final key = _keyCtrl.text.trim();
+                        if (key.isEmpty) {
+                          await ai.clearApiKey();
+                          ref.invalidate(aiHasKeyProvider);
+                          setState(() => _testResult = null);
+                        } else {
+                          await ai.setApiKey(key);
+                          ref.invalidate(aiHasKeyProvider);
+                          if (!ai.isEnabled) {
+                            await ai.setEnabled(true);
+                            ref.read(aiEnabledProvider.notifier).state = true;
+                          }
+                          setState(() => _testResult = null);
+                        }
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(key.isEmpty ? 'API key removed' : 'API key saved'),
+                              backgroundColor: key.isEmpty ? Tokens.chipYellow : Tokens.chipGreen,
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Get your key at console.anthropic.com → API Keys',
+                  style: AppTheme.caption.copyWith(fontSize: 10, color: Tokens.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Tokens.glassBorder, height: 1),
+
+          // Model selection
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.memory, size: 18, color: Tokens.textMuted),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Model', style: AppTheme.body.copyWith(fontSize: 13)),
+                      Text('Sonnet = best value. Haiku = cheapest. Opus = smartest.',
+                          style: AppTheme.caption.copyWith(fontSize: 10)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Tokens.bgDark,
+                    borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                    border: Border.all(color: Tokens.glassBorder),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: model,
+                      dropdownColor: Tokens.bgMid,
+                      style: AppTheme.body.copyWith(fontSize: 12),
+                      items: const [
+                        DropdownMenuItem(value: 'claude-sonnet-4-20250514', child: Text('Sonnet 4')),
+                        DropdownMenuItem(value: 'claude-haiku-4-20250414', child: Text('Haiku 4')),
+                        DropdownMenuItem(value: 'claude-opus-4-20250514', child: Text('Opus 4')),
+                      ],
+                      onChanged: (v) async {
+                        if (v == null) return;
+                        await ai.setModel(v);
+                        ref.read(aiModelProvider.notifier).state = v;
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Tokens.glassBorder, height: 1),
+
+          // Test connection
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                _SmallButton(
+                  label: _testing ? 'Testing...' : 'Test Connection',
+                  icon: _testing ? Icons.hourglass_top : Icons.wifi_tethering,
+                  onTap: _testing ? null : () async {
+                    setState(() { _testing = true; _testResult = null; });
+                    final error = await ai.testApiKey();
+                    if (mounted) {
+                      setState(() {
+                        _testing = false;
+                        _testResult = error ?? 'Connected successfully!';
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                if (_testResult != null)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          _testResult == 'Connected successfully!'
+                              ? Icons.check_circle : Icons.error_outline,
+                          size: 16,
+                          color: _testResult == 'Connected successfully!'
+                              ? Tokens.chipGreen : Tokens.chipRed,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _testResult!,
+                            style: AppTheme.caption.copyWith(
+                              fontSize: 11,
+                              color: _testResult == 'Connected successfully!'
+                                  ? Tokens.chipGreen : Tokens.chipRed,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _modelLabel(String model) {
+    if (model.contains('sonnet')) return 'Sonnet 4';
+    if (model.contains('haiku')) return 'Haiku 4';
+    if (model.contains('opus')) return 'Opus 4';
+    return model;
+  }
+}
+
+class _SmallButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _SmallButton({required this.label, required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Tokens.bgDark,
+      borderRadius: BorderRadius.circular(Tokens.radiusSm),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Tokens.radiusSm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Tokens.radiusSm),
+            border: Border.all(color: Tokens.glassBorder),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: Tokens.accent),
+              const SizedBox(width: 6),
+              Text(label, style: AppTheme.body.copyWith(fontSize: 11, color: Tokens.accent)),
+            ],
+          ),
         ),
       ),
     );
