@@ -6,6 +6,10 @@ import '../widgets/glass_card.dart';
 import '../widgets/crud_dialogs.dart';
 import '../models/project_models.dart';
 import '../state/project_providers.dart';
+import '../state/folder_scan_providers.dart';
+import '../services/folder_scan_service.dart' show DiscoveredMilestone, FolderScanService;
+import '../widgets/folder_files_section.dart';
+import 'package:intl/intl.dart';
 
 class SchedulePage extends ConsumerWidget {
   const SchedulePage({super.key});
@@ -38,6 +42,7 @@ class SchedulePage extends ConsumerWidget {
               ),
               const SizedBox(height: Tokens.spaceLg),
               Expanded(
+                flex: 3,
                 child: GlassCard(
                   child: Column(
                     children: [
@@ -59,7 +64,7 @@ class SchedulePage extends ConsumerWidget {
                             : ListView.builder(
                           padding: const EdgeInsets.only(top: 8),
                           itemCount: phases.length,
-                          itemBuilder: (context, i) => _PhaseRow(
+                          itemBuilder: (context, i) => RepaintBoundary(child: _PhaseRow(
                             phase: phases[i],
                             earliest: earliest,
                             totalDays: totalDays,
@@ -68,7 +73,7 @@ class SchedulePage extends ConsumerWidget {
                               final ok = await showDeleteConfirmation(context, phases[i].name);
                               if (ok) ref.read(scheduleProvider.notifier).remove(phases[i].id);
                             },
-                          ),
+                          )),
                         ),
                       ),
                     ],
@@ -92,6 +97,22 @@ class SchedulePage extends ConsumerWidget {
                     children: cards.map((c) => SizedBox(width: (constraints.maxWidth - 12) / 2, child: c)).toList(),
                   );
                 },
+              ),
+              const SizedBox(height: Tokens.spaceMd),
+              // ── Discovered Milestones from project folders ──
+              _DiscoveredMilestonesSection(),
+              const SizedBox(height: Tokens.spaceMd),
+              // ── Contract Timeline from scanned filenames ──
+              _ContractTimelineSection(),
+              const SizedBox(height: Tokens.spaceMd),
+              Expanded(
+                flex: 1,
+                child: FolderFilesSection(
+                  sectionTitle: 'SCHEDULE & CONTRACT FILES',
+                  provider: scannedScheduleProvider,
+                  accentColor: Tokens.accent,
+                  destinationFolder: r'0 Project Management\Schedule',
+                ),
               ),
             ],
           ),
@@ -180,77 +201,273 @@ class _PhaseRow extends StatelessWidget {
       _ => Tokens.textMuted,
     };
 
+    return InkWell(
+      onTap: onEdit,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 160,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(phase.name, style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text('${(phase.progress * 100).toInt()}% complete', style: AppTheme.caption.copyWith(fontSize: 10, color: color)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    height: 20,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Center(child: Container(height: 1, color: Tokens.glassBorder)),
+                        ),
+                        Positioned(
+                          left: startOffset * constraints.maxWidth,
+                          child: Container(
+                            width: width * constraints.maxWidth,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: color.withValues(alpha: 0.3)),
+                            ),
+                          ),
+                        ),
+                        if (phase.progress > 0)
+                          Positioned(
+                            left: startOffset * constraints.maxWidth,
+                            child: Container(
+                              width: width * constraints.maxWidth * phase.progress,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(
+              width: 52,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  InkWell(
+                    onTap: onEdit,
+                    borderRadius: BorderRadius.circular(4),
+                    child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.edit_outlined, size: 14, color: Tokens.textMuted)),
+                  ),
+                  InkWell(
+                    onTap: onDelete,
+                    borderRadius: BorderRadius.circular(4),
+                    child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.delete_outline, size: 14, color: Tokens.chipRed)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiscoveredMilestonesSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final milestonesAsync = ref.watch(discoveredMilestonesProvider);
+
+    return milestonesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (milestones) {
+        if (milestones.isEmpty) return const SizedBox.shrink();
+
+        return GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: Tokens.chipYellow.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.auto_awesome, size: 14, color: Tokens.chipYellow),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('DISCOVERED FROM PROJECT FILES',
+                      style: AppTheme.sidebarGroupLabel.copyWith(fontSize: 10, letterSpacing: 0.8)),
+                  const Spacer(),
+                  Text('${milestones.length} milestone${milestones.length == 1 ? '' : 's'}',
+                      style: AppTheme.caption.copyWith(fontSize: 10)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Divider(color: Tokens.glassBorder, height: 1),
+              const SizedBox(height: 6),
+              ...milestones.map((m) => _MilestoneRow(milestone: m)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MilestoneRow extends StatelessWidget {
+  final DiscoveredMilestone milestone;
+  const _MilestoneRow({required this.milestone});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat('MMM d, yyyy');
+    final now = DateTime.now();
+    final isPast = milestone.date.isBefore(now);
+    final color = isPast ? Tokens.chipGreen : Tokens.chipBlue;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          SizedBox(
-            width: 160,
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(phase.name, style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w500)),
-                Text('${(phase.progress * 100).toInt()}% complete', style: AppTheme.caption.copyWith(fontSize: 10, color: color)),
+                Text(
+                  milestone.label,
+                  style: AppTheme.body.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  '${milestone.fileCount} file${milestone.fileCount == 1 ? '' : 's'} • ${milestone.source.split('\\').take(3).join('\\')}',
+                  style: AppTheme.caption.copyWith(fontSize: 9),
+                ),
               ],
             ),
           ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Center(child: Container(height: 1, color: Tokens.glassBorder)),
-                    ),
-                    Positioned(
-                      left: startOffset * constraints.maxWidth,
-                      child: Container(
-                        width: width * constraints.maxWidth,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: color.withValues(alpha: 0.3)),
-                        ),
-                      ),
-                    ),
-                    if (phase.progress > 0)
-                      Positioned(
-                        left: startOffset * constraints.maxWidth,
-                        child: Container(
-                          width: width * constraints.maxWidth * phase.progress,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(Tokens.radiusSm),
             ),
-          ),
-          SizedBox(
-            width: 52,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                InkWell(
-                  onTap: onEdit,
-                  borderRadius: BorderRadius.circular(4),
-                  child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.edit_outlined, size: 14, color: Tokens.textMuted)),
-                ),
-                InkWell(
-                  onTap: onDelete,
-                  borderRadius: BorderRadius.circular(4),
-                  child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.delete_outline, size: 14, color: Tokens.chipRed)),
-                ),
-              ],
+            child: Text(
+              fmt.format(milestone.date),
+              style: AppTheme.caption.copyWith(fontSize: 10, color: color, fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ContractTimelineSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contractsAsync = ref.watch(contractMetadataProvider);
+
+    return contractsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (contracts) {
+        if (contracts.isEmpty) return const SizedBox.shrink();
+
+        final fmt = DateFormat('MMM d, yyyy');
+
+        return GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: Tokens.chipGreen.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.description_outlined, size: 14, color: Tokens.chipGreen),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('CONTRACT TIMELINE',
+                      style: AppTheme.sidebarGroupLabel.copyWith(fontSize: 10, letterSpacing: 0.8)),
+                  const Spacer(),
+                  Text('${contracts.length} document${contracts.length == 1 ? '' : 's'}',
+                      style: AppTheme.caption.copyWith(fontSize: 10)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Divider(color: Tokens.glassBorder, height: 1),
+              const SizedBox(height: 6),
+              ...contracts.map((c) {
+                final typeColor = switch (c.type) {
+                  'Original' => Tokens.chipGreen,
+                  'Amendment' => Tokens.chipBlue,
+                  'Consultant' => Tokens.chipYellow,
+                  _ => Tokens.textMuted,
+                };
+                return InkWell(
+                  onTap: () => FolderScanService.openFile(c.fullPath),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(color: typeColor, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            c.displayTitle,
+                            style: AppTheme.body.copyWith(fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: typeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                          ),
+                          child: Text(
+                            fmt.format(c.date),
+                            style: AppTheme.caption.copyWith(fontSize: 9, color: typeColor, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/project_models.dart';
 import '../services/storage_service.dart';
 import '../main.dart' show storageServiceProvider;
+import 'folder_scan_providers.dart' show activeProjectIdProvider, projectsProvider;
 import 'default_data.dart';
 
 // ═══════════════════════════════════════════════════════════
@@ -37,6 +38,7 @@ class TeamNotifier extends StateNotifier<List<TeamMember>> {
 }
 
 final teamProvider = StateNotifierProvider<TeamNotifier, List<TeamMember>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return TeamNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -78,6 +80,7 @@ class RfiNotifier extends StateNotifier<List<RfiItem>> {
 }
 
 final rfisProvider = StateNotifierProvider<RfiNotifier, List<RfiItem>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return RfiNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -114,6 +117,7 @@ class ContractNotifier extends StateNotifier<List<ContractItem>> {
 }
 
 final contractsProvider = StateNotifierProvider<ContractNotifier, List<ContractItem>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return ContractNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -146,7 +150,42 @@ class ScheduleNotifier extends StateNotifier<List<SchedulePhase>> {
 }
 
 final scheduleProvider = StateNotifierProvider<ScheduleNotifier, List<SchedulePhase>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return ScheduleNotifier(ref.watch(storageServiceProvider));
+});
+
+/// Computed overall project progress (0.0–1.0) from schedule phases.
+/// Weighted by phase duration: longer phases contribute more to the total.
+/// Also auto-updates the stored progress on the active ProjectEntry.
+final computedProgressProvider = Provider<double>((ref) {
+  final phases = ref.watch(scheduleProvider);
+  if (phases.isEmpty) return 0.0;
+
+  double totalWeight = 0;
+  double weightedProgress = 0;
+  for (final p in phases) {
+    final days = p.durationDays.clamp(1, 9999).toDouble();
+    totalWeight += days;
+    weightedProgress += days * p.progress;
+  }
+  final progress = totalWeight > 0 ? (weightedProgress / totalWeight).clamp(0.0, 1.0) : 0.0;
+
+  // Side-effect: persist progress on active project so pinned bar shows it even when not active
+  final activeId = ref.read(activeProjectIdProvider);
+  if (activeId != null) {
+    final projects = ref.read(projectsProvider);
+    final active = projects.where((p) => p.id == activeId).firstOrNull;
+    if (active != null && (active.progress - progress).abs() > 0.01) {
+      // Use Future.microtask to avoid modifying providers during build
+      Future.microtask(() {
+        ref.read(projectsProvider.notifier).update(
+          active.copyWith(progress: progress),
+        );
+      });
+    }
+  }
+
+  return progress;
 });
 
 class BudgetNotifier extends StateNotifier<List<BudgetLine>> {
@@ -178,10 +217,12 @@ class BudgetNotifier extends StateNotifier<List<BudgetLine>> {
 }
 
 final budgetProvider = StateNotifierProvider<BudgetNotifier, List<BudgetLine>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return BudgetNotifier(ref.watch(storageServiceProvider));
 });
 
 final deadlinesProvider = Provider<List<Deadline>>((ref) {
+  ref.watch(activeProjectIdProvider);
   final storage = ref.watch(storageServiceProvider);
   final saved = storage.loadDeadlines();
   if (saved.isNotEmpty) return saved;
@@ -218,10 +259,12 @@ class DrawingSheetNotifier extends StateNotifier<List<DrawingSheet>> {
 }
 
 final drawingSheetsProvider = StateNotifierProvider<DrawingSheetNotifier, List<DrawingSheet>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return DrawingSheetNotifier(ref.watch(storageServiceProvider));
 });
 
 final printSetsProvider = Provider<List<PrintSet>>((ref) {
+  ref.watch(activeProjectIdProvider);
   final storage = ref.watch(storageServiceProvider);
   final saved = storage.loadPrintSets();
   if (saved.isNotEmpty) return saved;
@@ -230,6 +273,7 @@ final printSetsProvider = Provider<List<PrintSet>>((ref) {
 });
 
 final renderingsProvider = Provider<List<RenderingItem>>((ref) {
+  ref.watch(activeProjectIdProvider);
   final storage = ref.watch(storageServiceProvider);
   final saved = storage.loadRenderings();
   if (saved.isNotEmpty) return saved;
@@ -275,10 +319,12 @@ class AsiNotifier extends StateNotifier<List<AsiItem>> {
 }
 
 final asisProvider = StateNotifierProvider<AsiNotifier, List<AsiItem>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return AsiNotifier(ref.watch(storageServiceProvider));
 });
 
 final spaceRequirementsProvider = Provider<List<SpaceRequirement>>((ref) {
+  ref.watch(activeProjectIdProvider);
   final storage = ref.watch(storageServiceProvider);
   final saved = storage.loadSpaceReqs();
   if (saved.isNotEmpty) return saved;
@@ -286,12 +332,98 @@ final spaceRequirementsProvider = Provider<List<SpaceRequirement>>((ref) {
   return DefaultData.spaceRequirements;
 });
 
-final projectInfoProvider = Provider<List<ProjectInfoEntry>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final saved = storage.loadProjectInfo();
-  if (saved.isNotEmpty) return saved;
-  storage.saveProjectInfo(DefaultData.projectInfo);
-  return DefaultData.projectInfo;
+class ProjectInfoNotifier extends StateNotifier<List<ProjectInfoEntry>> {
+  final StorageService _storage;
+
+  ProjectInfoNotifier(this._storage) : super([]) {
+    final saved = _storage.loadProjectInfo();
+    state = saved.isNotEmpty ? saved : DefaultData.projectInfo;
+    if (saved.isEmpty) _storage.saveProjectInfo(state);
+  }
+
+  void add(ProjectInfoEntry entry) {
+    state = [...state, entry];
+    _storage.saveProjectInfo(state);
+  }
+
+  void remove(String id) {
+    state = state.where((e) => e.id != id).toList();
+    _storage.saveProjectInfo(state);
+  }
+
+  void update(ProjectInfoEntry entry) {
+    state = [
+      for (final e in state)
+        if (e.id == entry.id) entry else e,
+    ];
+    _storage.saveProjectInfo(state);
+  }
+
+  static const _sourcePriority = {
+    'manual': 100,
+    'sheet': 80,
+    'city': 60,
+    'contract': 40,
+    'inferred': 20,
+  };
+
+  /// Clear all automated (non-manual) field values so stale cached data
+  /// doesn't persist when the extraction pipeline is re-run.
+  /// Keeps the entries but resets their values to empty.
+  void clearAutomatedFields() {
+    bool changed = false;
+    state = [
+      for (final e in state)
+        if (e.source != 'manual' && e.value.isNotEmpty)
+          (() { changed = true; return ProjectInfoEntry(
+            id: e.id, category: e.category, label: e.label, value: '',
+            source: e.source, confidence: 0, lastUpdated: e.lastUpdated,
+          ); })()
+        else e,
+    ];
+    if (changed) _storage.saveProjectInfo(state);
+  }
+
+  /// Update a single field by label; creates the entry if it doesn't exist.
+  /// Respects source priority: manual > sheet > city > contract > inferred.
+  void upsertByLabel(String category, String label, String value, {
+    String source = 'manual',
+    double confidence = 1.0,
+  }) {
+    if (value.isEmpty) return;
+    final idx = state.indexWhere((e) => e.label == label);
+    if (idx >= 0) {
+      final existing = state[idx];
+      final existingPri = _sourcePriority[existing.source] ?? 0;
+      final newPri = _sourcePriority[source] ?? 0;
+      // Never overwrite manual entries with automated sources
+      if (existing.source == 'manual' && source != 'manual' && existing.value.isNotEmpty) return;
+      // Only overwrite if equal/higher priority or existing is empty
+      if (newPri < existingPri && existing.value.isNotEmpty) return;
+      // Skip if value unchanged from same source
+      if (existing.value == value && existing.source == source) return;
+      state = [
+        for (int i = 0; i < state.length; i++)
+          if (i == idx) ProjectInfoEntry(
+            id: existing.id, category: category, label: label, value: value,
+            source: source, confidence: confidence, lastUpdated: DateTime.now(),
+          )
+          else state[i],
+      ];
+    } else {
+      state = [...state, ProjectInfoEntry(
+        id: 'pi_${DateTime.now().millisecondsSinceEpoch}',
+        category: category, label: label, value: value,
+        source: source, confidence: confidence, lastUpdated: DateTime.now(),
+      )];
+    }
+    _storage.saveProjectInfo(state);
+  }
+}
+
+final projectInfoProvider = StateNotifierProvider<ProjectInfoNotifier, List<ProjectInfoEntry>>((ref) {
+  ref.watch(activeProjectIdProvider);
+  return ProjectInfoNotifier(ref.watch(storageServiceProvider));
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -336,6 +468,7 @@ class ChangeOrderNotifier extends StateNotifier<List<ChangeOrder>> {
 }
 
 final changeOrdersProvider = StateNotifierProvider<ChangeOrderNotifier, List<ChangeOrder>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return ChangeOrderNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -381,6 +514,7 @@ class SubmittalNotifier extends StateNotifier<List<SubmittalItem>> {
 }
 
 final submittalsProvider = StateNotifierProvider<SubmittalNotifier, List<SubmittalItem>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return SubmittalNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -428,6 +562,7 @@ class ActivityNotifier extends StateNotifier<List<ActivityItem>> {
 }
 
 final activityProvider = StateNotifierProvider<ActivityNotifier, List<ActivityItem>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return ActivityNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -484,6 +619,7 @@ class TodoNotifier extends StateNotifier<List<TodoItem>> {
 }
 
 final todosProvider = StateNotifierProvider<TodoNotifier, List<TodoItem>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return TodoNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -508,6 +644,7 @@ class FilesNotifier extends StateNotifier<List<ProjectFile>> {
 }
 
 final filesProvider = StateNotifierProvider<FilesNotifier, List<ProjectFile>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return FilesNotifier(ref.watch(storageServiceProvider));
 });
 
@@ -527,5 +664,6 @@ class PhaseDocumentsNotifier extends StateNotifier<List<PhaseDocument>> {
 }
 
 final phaseDocumentsProvider = StateNotifierProvider<PhaseDocumentsNotifier, List<PhaseDocument>>((ref) {
+  ref.watch(activeProjectIdProvider);
   return PhaseDocumentsNotifier(ref.watch(storageServiceProvider));
 });

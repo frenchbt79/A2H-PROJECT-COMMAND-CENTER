@@ -5,6 +5,8 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../models/project_models.dart';
 import '../state/project_providers.dart';
+import '../state/project_signals_provider.dart';
+import '../models/project_signals.dart';
 
 class ProjectMapPage extends ConsumerWidget {
   const ProjectMapPage({super.key});
@@ -13,15 +15,13 @@ class ProjectMapPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final phases = ref.watch(scheduleProvider);
     final deadlines = ref.watch(deadlinesProvider);
-    final rfis = ref.watch(rfisProvider);
-    final todos = ref.watch(todosProvider);
+    final signalsAsync = ref.watch(projectSignalsProvider);
+    final signals = signalsAsync.valueOrNull ?? ProjectSignals.empty();
 
-    final openRfis = rfis.where((r) => r.status == 'Open').length;
-    final pendingTodos = todos.where((t) => !t.done).length;
-    final completedPhases = phases.where((p) => p.status == 'Complete').length;
-    final overallProgress = phases.isEmpty
-        ? 0.0
-        : phases.fold(0.0, (s, p) => s + p.progress) / phases.length;
+    final openRfis = signals.openRfis;
+    final pendingTodos = signals.pendingTodos;
+    final completedPhases = signals.phasesComplete;
+    final overallProgress = signals.overallProgress;
 
     return Padding(
       padding: const EdgeInsets.all(Tokens.spaceLg),
@@ -83,7 +83,7 @@ class ProjectMapPage extends ConsumerWidget {
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: deadlines.length,
-                      itemBuilder: (context, i) => _MilestoneChip(deadline: deadlines[i]),
+                      itemBuilder: (context, i) => RepaintBoundary(child: _MilestoneChip(deadline: deadlines[i])),
                     ),
                   ),
                 ],
@@ -237,11 +237,11 @@ class _TimelineView extends StatelessWidget {
           // Vertical timeline for narrow screens
           return ListView.builder(
             itemCount: phases.length,
-            itemBuilder: (context, i) => _VerticalPhaseNode(
+            itemBuilder: (context, i) => RepaintBoundary(child: _VerticalPhaseNode(
               phase: phases[i],
               isFirst: i == 0,
               isLast: i == phases.length - 1,
-            ),
+            )),
           );
         }
         // Horizontal timeline for wide screens

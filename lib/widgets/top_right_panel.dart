@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../state/project_providers.dart';
+import '../state/nav_state.dart';
+import '../state/folder_scan_providers.dart';
+import '../services/folder_scan_service.dart' show DiscoveredMilestone;
 import 'glass_card.dart';
 
 /// Calendar + Deadlines stacked panel for the dashboard top-right.
@@ -80,27 +83,83 @@ class _MiniCalendarCard extends StatelessWidget {
   }
 }
 
-// ── Deadlines ─────────────────────────────────────────────
+// ── Key Milestones & Deadlines ────────────────────────────
 class _DeadlinesCard extends ConsumerWidget {
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deadlines = ref.watch(deadlinesProvider);
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final discoveredAsync = ref.watch(discoveredMilestonesProvider);
+    final discovered = discoveredAsync.valueOrNull ?? <DiscoveredMilestone>[];
+    final now = DateTime.now();
 
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('UPCOMING DEADLINES', style: AppTheme.caption),
+          Row(
+            children: [
+              Text('KEY MILESTONES & DEADLINES', style: AppTheme.caption),
+              const Spacer(),
+              if (discovered.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Tokens.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                  ),
+                  child: Text('${deadlines.length + discovered.length}', style: AppTheme.caption.copyWith(fontSize: 10, color: Tokens.accent, fontWeight: FontWeight.w700)),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
-              children: deadlines.map((dl) {
-                final color = switch (dl.severity) { 'green' => Tokens.chipGreen, 'yellow' => Tokens.chipYellow, 'red' => Tokens.chipRed, _ => Tokens.chipBlue };
-                final dateStr = '${months[dl.date.month - 1]} ${dl.date.day.toString().padLeft(2, '0')}';
-                return _DeadlineRow(label: dl.label, date: dateStr, color: color);
-              }).toList(),
+              children: [
+                // Manual deadlines
+                ...deadlines.map((dl) {
+                  final color = switch (dl.severity) { 'green' => Tokens.chipGreen, 'yellow' => Tokens.chipYellow, 'red' => Tokens.chipRed, _ => Tokens.chipBlue };
+                  final dateStr = '${_months[dl.date.month - 1]} ${dl.date.day}, ${dl.date.year}';
+                  final daysAway = dl.date.difference(now).inDays;
+                  final subLabel = daysAway > 0 ? 'in $daysAway days' : daysAway == 0 ? 'Today' : '${-daysAway} days ago';
+                  return _DeadlineRow(
+                    label: dl.label,
+                    date: dateStr,
+                    subLabel: subLabel,
+                    color: color,
+                    onTap: () => ref.read(navProvider.notifier).selectPage(NavRoute.schedule),
+                  );
+                }),
+                // Discovered milestones from project files
+                if (discovered.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  const Divider(color: Tokens.glassBorder, height: 1),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, size: 10, color: Tokens.chipYellow),
+                      const SizedBox(width: 4),
+                      Text('FROM PROJECT FILES', style: AppTheme.caption.copyWith(fontSize: 8, letterSpacing: 0.6, color: Tokens.chipYellow)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ...discovered.map((m) {
+                    final isPast = m.date.isBefore(now);
+                    final color = isPast ? Tokens.chipGreen : Tokens.chipBlue;
+                    final dateStr = '${_months[m.date.month - 1]} ${m.date.day}, ${m.date.year}';
+                    final subLabel = isPast ? '${m.fileCount} files' : 'in ${m.date.difference(now).inDays} days';
+                    return _DeadlineRow(
+                      label: m.label,
+                      date: dateStr,
+                      subLabel: subLabel,
+                      color: color,
+                      onTap: () => ref.read(navProvider.notifier).selectPage(NavRoute.schedule),
+                    );
+                  }),
+                ],
+              ],
             ),
           ),
         ],
@@ -112,24 +171,39 @@ class _DeadlinesCard extends ConsumerWidget {
 class _DeadlineRow extends StatelessWidget {
   final String label;
   final String date;
+  final String subLabel;
   final Color color;
-  const _DeadlineRow({required this.label, required this.date, required this.color});
+  final VoidCallback? onTap;
+  const _DeadlineRow({required this.label, required this.date, required this.subLabel, required this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 8),
-          Expanded(child: Text(label, style: AppTheme.body.copyWith(fontSize: 12))),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(Tokens.radiusSm)),
-            child: Text(date, style: AppTheme.caption.copyWith(fontSize: 10, color: color)),
-          ),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+        child: Row(
+          children: [
+            Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: AppTheme.body.copyWith(fontSize: 12), overflow: TextOverflow.ellipsis),
+                  Text(subLabel, style: AppTheme.caption.copyWith(fontSize: 9, color: Tokens.textMuted)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(Tokens.radiusSm)),
+              child: Text(date, style: AppTheme.caption.copyWith(fontSize: 10, color: color)),
+            ),
+          ],
+        ),
       ),
     );
   }

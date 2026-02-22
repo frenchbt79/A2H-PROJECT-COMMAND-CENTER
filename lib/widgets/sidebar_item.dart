@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 
-class SidebarItem extends StatefulWidget {
+class SidebarItem extends StatelessWidget {
   final String label;
   final bool isActive;
   final VoidCallback onTap;
@@ -17,60 +17,45 @@ class SidebarItem extends StatefulWidget {
   });
 
   @override
-  State<SidebarItem> createState() => _SidebarItemState();
-}
-
-class _SidebarItemState extends State<SidebarItem> {
-  bool _hovering = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: widget.isActive
-                ? Tokens.sidebarActive
-                : _hovering
-                    ? Tokens.glassFill
-                    : Colors.transparent,
+            color: isActive ? Tokens.sidebarActive : Colors.transparent,
             borderRadius: BorderRadius.circular(Tokens.radiusSm),
           ),
           child: Row(
             children: [
-              // Left accent bar for active
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 100),
+              Container(
                 width: 3,
                 height: 18,
                 margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
-                  color: widget.isActive ? Tokens.accent : Colors.transparent,
+                  color: isActive ? Tokens.accent : Colors.transparent,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              if (widget.icon != null) ...[
+              if (icon != null) ...[
                 Icon(
-                  widget.icon,
+                  icon,
                   size: 18,
-                  color: widget.isActive ? Tokens.accent : Tokens.textSecondary,
+                  color: isActive ? Tokens.accent : Tokens.textSecondary,
                 ),
                 const SizedBox(width: 10),
               ],
               Expanded(
                 child: Text(
-                  widget.label,
+                  label,
                   style: AppTheme.body.copyWith(
                     fontSize: 13,
-                    color: widget.isActive ? Tokens.textPrimary : Tokens.textSecondary,
-                    fontWeight: widget.isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive ? Tokens.textPrimary : Tokens.textSecondary,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

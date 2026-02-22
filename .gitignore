@@ -52,3 +52,11 @@ build_web.bat
 patch_vs.py
 create_shortcuts.ps1
 serve_web.bat
+
+# Node modules
+**/node_modules/
+
+# Build artifacts and logs
+_build_stderr.txt
+_build_stdout.txt
+build_log.txt

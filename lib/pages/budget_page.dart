@@ -5,6 +5,9 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/crud_dialogs.dart';
 import '../state/project_providers.dart';
+import '../state/folder_scan_providers.dart';
+import '../services/folder_scan_service.dart' show FolderScanService;
+import '../widgets/folder_files_section.dart';
 
 class BudgetPage extends ConsumerWidget {
   const BudgetPage({super.key});
@@ -46,6 +49,7 @@ class BudgetPage extends ConsumerWidget {
               ),
               const SizedBox(height: Tokens.spaceLg),
               Expanded(
+                flex: 3,
                 child: GlassCard(
                   child: LayoutBuilder(
                     builder: (context, outerConstraints) {
@@ -89,7 +93,7 @@ class BudgetPage extends ConsumerWidget {
                                   separatorBuilder: (_, __) => const Divider(color: Tokens.glassBorder, height: 1),
                                   itemBuilder: (context, i) {
                                     final line = lines[i];
-                                    return Padding(
+                                    return RepaintBoundary(child: Padding(
                                       padding: const EdgeInsets.symmetric(vertical: 10),
                                       child: Row(
                                         children: [
@@ -122,7 +126,7 @@ class BudgetPage extends ConsumerWidget {
                                           ),
                                         ],
                                       ),
-                                    );
+                                    ));
                                   },
                                 ),
                               ),
@@ -147,6 +151,19 @@ class BudgetPage extends ConsumerWidget {
                       );
                     },
                   ),
+                ),
+              ),
+              const SizedBox(height: Tokens.spaceMd),
+              // ── Discovered fee worksheets ──
+              _FeeWorksheetsSection(),
+              const SizedBox(height: Tokens.spaceMd),
+              Expanded(
+                flex: 1,
+                child: FolderFilesSection(
+                  sectionTitle: 'FEE WORKSHEETS & CONTRACTS',
+                  provider: scannedBudgetProvider,
+                  accentColor: Tokens.accent,
+                  destinationFolder: r'0 Project Management\Contracts\Fee Worksheets',
                 ),
               ),
             ],
@@ -190,6 +207,97 @@ class _BudgetTile extends StatelessWidget {
           Text(value, style: AppTheme.subheading.copyWith(color: color)),
         ],
       ),
+    );
+  }
+}
+
+class _FeeWorksheetsSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final worksheetsAsync = ref.watch(feeWorksheetsProvider);
+
+    return worksheetsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (worksheets) {
+        if (worksheets.isEmpty) return const SizedBox.shrink();
+
+        // Assign colors per discipline
+        const disciplineColors = <String, Color>{
+          'Architectural': Tokens.chipBlue,
+          'Civil': Tokens.chipGreen,
+          'Electrical': Tokens.chipYellow,
+          'Fire Protection': Tokens.chipRed,
+          'Landscape Architectural': Tokens.chipIndigo,
+          'Mechanical': Tokens.chipOrange,
+          'Planning': Tokens.accent,
+          'Plumbing': Color(0xFF4DB6AC),
+          'Structural': Color(0xFFBA68C8),
+          'Summary': Tokens.textSecondary,
+        };
+
+        return GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: Tokens.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.table_chart_outlined, size: 14, color: Tokens.accent),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('FEE WORKSHEETS',
+                      style: AppTheme.sidebarGroupLabel.copyWith(fontSize: 10, letterSpacing: 0.8)),
+                  const Spacer(),
+                  Text('${worksheets.length} file${worksheets.length == 1 ? '' : 's'}',
+                      style: AppTheme.caption.copyWith(fontSize: 10)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Divider(color: Tokens.glassBorder, height: 1),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: worksheets.map((ws) {
+                  final color = disciplineColors[ws.discipline] ?? Tokens.textSecondary;
+                  return InkWell(
+                    onTap: () => FolderScanService.openFile(ws.fullPath),
+                    borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                    child: Tooltip(
+                      message: ws.filename,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                          border: Border.all(color: color.withValues(alpha: 0.25)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.table_chart, size: 12, color: color),
+                            const SizedBox(width: 6),
+                            Text(
+                              ws.discipline,
+                              style: AppTheme.caption.copyWith(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

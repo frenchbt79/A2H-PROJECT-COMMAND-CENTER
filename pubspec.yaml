@@ -1,7 +1,7 @@
 name: project_command_center
-description: Project Command Center - Cross-platform project management dashboard
+description: A2H Project Dashboard - Cross-platform project management dashboard
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.7.0
@@ -15,6 +15,13 @@ dependencies:
   path_provider: ^2.1.5
   intl: ^0.20.2
   url_launcher: ^6.3.1
+  desktop_drop: ^0.5.0
+  pdfrx: ^1.1.1
+  http: ^1.2.2
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  spreadsheet_decoder: ^2.3.0
+  pdf_combiner: ^6.0.4
 
 dev_dependencies:
   flutter_test:
@@ -23,3 +30,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon_512.png

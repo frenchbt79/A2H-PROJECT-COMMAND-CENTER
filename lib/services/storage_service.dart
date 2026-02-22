@@ -24,26 +24,38 @@ class StorageService {
   static const _keyChangeOrders = 'pcc_change_orders';
   static const _keySubmittals = 'pcc_submittals';
   static const _keyActivities = 'pcc_activities';
+  static const _keyProjectPath = 'pcc_project_path';
+  static const _keyProjects = 'pcc_projects';
+  static const _keyActiveProjectId = 'pcc_active_project_id';
 
   late final SharedPreferences _prefs;
+  SharedPreferences get prefs => _prefs;
+  String _projectId = '';
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  /// Set the active project ID for per-project key namespacing.
+  void setProjectId(String id) => _projectId = id;
+
+  /// Returns the namespaced key for per-project data.
+  String _pkey(String baseKey) =>
+      _projectId.isEmpty ? baseKey : '${baseKey}_$_projectId';
+
   // ── Generic helpers ─────────────────────────────────────────
-  List<T> _loadList<T>(String key, T Function(Map<String, dynamic>) fromJson) {
-    final raw = _prefs.getString(key);
+  List<T> _loadList<T>(String key, T Function(Map<String, dynamic>) fromJson, {bool global = false}) {
+    final raw = _prefs.getString(global ? key : _pkey(key));
     if (raw == null) return [];
     final list = jsonDecode(raw) as List;
     return list.map((e) => fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<void> _saveList<T>(String key, List<T> items, Map<String, dynamic> Function(T) toJson) async {
-    await _prefs.setString(key, jsonEncode(items.map(toJson).toList()));
+  Future<void> _saveList<T>(String key, List<T> items, Map<String, dynamic> Function(T) toJson, {bool global = false}) async {
+    await _prefs.setString(global ? key : _pkey(key), jsonEncode(items.map(toJson).toList()));
   }
 
-  bool hasData(String key) => _prefs.containsKey(key);
+  bool hasData(String key) => _prefs.containsKey(_pkey(key));
   bool get hasAnyData => _prefs.getKeys().any((k) => k.startsWith('pcc_'));
 
   // ── Team ────────────────────────────────────────────────────
@@ -118,6 +130,20 @@ class StorageService {
   List<ActivityItem> loadActivities() => _loadList(_keyActivities, _activityFromJson);
   Future<void> saveActivities(List<ActivityItem> items) => _saveList(_keyActivities, items, _activityToJson);
 
+  // ── Project Path ──────────────────────────────────────────────
+  String loadProjectPath() => _prefs.getString(_keyProjectPath) ?? r'I:\2024\24402';
+  Future<void> saveProjectPath(String path) => _prefs.setString(_keyProjectPath, path);
+
+  // ── Projects (multi-project support) ────────────────────────────
+  List<ProjectEntry> loadProjects() => _loadList(_keyProjects, _projectFromJson, global: true);
+  Future<void> saveProjects(List<ProjectEntry> items) => _saveList(_keyProjects, items, _projectToJson, global: true);
+  String? loadActiveProjectId() => _prefs.getString(_keyActiveProjectId);
+  Future<void> saveActiveProjectId(String id) => _prefs.setString(_keyActiveProjectId, id);
+
+  // ── Generic string storage ────────────────────────────────────
+  String? loadString(String key) => _prefs.getString('pcc_$key');
+  Future<void> saveString(String key, String value) => _prefs.setString('pcc_$key', value);
+
   // ── Import all data from JSON string ────────────────────────────
   Future<String?> importAll(String jsonString) async {
     try {
@@ -135,7 +161,11 @@ class StorageService {
 
   // ── Clear all data ──────────────────────────────────────────
   Future<void> clearAll() async {
-    final keys = _prefs.getKeys().where((k) => k.startsWith('pcc_')).toList();
+    // Only clear per-project data, not global keys (projects list, active ID)
+    final globalKeys = {_keyProjects, _keyActiveProjectId, _keyProjectPath};
+    final keys = _prefs.getKeys().where((k) =>
+      k.startsWith('pcc_') && !globalKeys.contains(k)
+    ).toList();
     for (final k in keys) {
       await _prefs.remove(k);
     }
@@ -143,8 +173,14 @@ class StorageService {
 
   // ── Export all data as JSON string ──────────────────────────
   String exportAll() {
+    final suffix = _projectId.isEmpty ? '' : '_$_projectId';
     final data = <String, dynamic>{};
     for (final key in _prefs.getKeys().where((k) => k.startsWith('pcc_'))) {
+      // Export per-project keys (with current suffix) + global keys
+      if (suffix.isNotEmpty && !key.endsWith(suffix) &&
+          key != _keyProjects && key != _keyActiveProjectId && key != _keyProjectPath) {
+        continue;
+      }
       data[key] = jsonDecode(_prefs.getString(key) ?? '[]');
     }
     return const JsonEncoder.withIndent('  ').convert(data);
@@ -316,9 +352,14 @@ class StorageService {
   // ── Project Info ────────────────────────────────────────────
   static Map<String, dynamic> _projInfoToJson(ProjectInfoEntry p) => {
     'id': p.id, 'category': p.category, 'label': p.label, 'value': p.value,
+    'source': p.source, 'confidence': p.confidence,
+    'lastUpdated': p.lastUpdated?.toIso8601String(),
   };
   static ProjectInfoEntry _projInfoFromJson(Map<String, dynamic> j) => ProjectInfoEntry(
     id: j['id'], category: j['category'], label: j['label'], value: j['value'],
+    source: j['source'] as String? ?? 'manual',
+    confidence: (j['confidence'] as num?)?.toDouble() ?? 1.0,
+    lastUpdated: j['lastUpdated'] != null ? DateTime.tryParse(j['lastUpdated']) : null,
   );
 
   // ── Change Orders ─────────────────────────────────────────
@@ -358,10 +399,25 @@ class StorageService {
     'id': a.id, 'title': a.title, 'description': a.description,
     'timestamp': a.timestamp.toIso8601String(), 'category': a.category,
     'isRead': a.isRead,
+    if (a.filePath != null) 'filePath': a.filePath,
   };
   static ActivityItem _activityFromJson(Map<String, dynamic> j) => ActivityItem(
     id: j['id'], title: j['title'], description: j['description'],
     timestamp: DateTime.parse(j['timestamp']), category: j['category'],
     isRead: j['isRead'] ?? false,
+    filePath: j['filePath'] as String?,
+  );
+
+  // ── Projects ──────────────────────────────────────────────
+  static Map<String, dynamic> _projectToJson(ProjectEntry p) => {
+    'id': p.id, 'name': p.name, 'number': p.number, 'folderPath': p.folderPath,
+    'isPinned': p.isPinned, 'client': p.client, 'status': p.status, 'progress': p.progress,
+  };
+  static ProjectEntry _projectFromJson(Map<String, dynamic> j) => ProjectEntry(
+    id: j['id'], name: j['name'], number: j['number'], folderPath: j['folderPath'],
+    isPinned: j['isPinned'] ?? false,
+    client: j['client'] ?? '',
+    status: j['status'] ?? 'Active',
+    progress: (j['progress'] as num?)?.toDouble() ?? 0.0,
   );
 }

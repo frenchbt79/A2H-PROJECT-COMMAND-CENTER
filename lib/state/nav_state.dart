@@ -15,11 +15,9 @@ enum NavRoute {
   clientProvided,
   photos,
   projectInformationList,
-  // DESIGN PHASES
-  schematicDesign,
-  designDevelopment,
-  constructionDocuments,
   // DISCIPLINES
+  general,
+  structural,
   architectural,
   civil,
   landscape,
@@ -27,6 +25,7 @@ enum NavRoute {
   electrical,
   plumbing,
   fireProtection,
+  closeoutDocuments,
   // DELIVERABLES & MEDIA
   progressPrints,
   signedPrints,
@@ -37,6 +36,7 @@ enum NavRoute {
   asis,
   changeOrders,
   submittals,
+  punchlists,
   // Standalone action
   importProjectInformation,
   // Settings
@@ -68,12 +68,10 @@ extension NavRouteLabel on NavRoute {
         return 'Photos';
       case NavRoute.projectInformationList:
         return 'Project Information List';
-      case NavRoute.schematicDesign:
-        return 'Schematic Design';
-      case NavRoute.designDevelopment:
-        return 'Design Development';
-      case NavRoute.constructionDocuments:
-        return 'Construction Documents';
+      case NavRoute.general:
+        return 'General';
+      case NavRoute.structural:
+        return 'Structural';
       case NavRoute.architectural:
         return 'Architectural';
       case NavRoute.civil:
@@ -88,6 +86,8 @@ extension NavRouteLabel on NavRoute {
         return 'Plumbing';
       case NavRoute.fireProtection:
         return 'Fire Protection';
+      case NavRoute.closeoutDocuments:
+        return 'Closeout Documents';
       case NavRoute.progressPrints:
         return 'Progress Prints';
       case NavRoute.signedPrints:
@@ -104,6 +104,8 @@ extension NavRouteLabel on NavRoute {
         return 'Change Orders';
       case NavRoute.submittals:
         return 'Submittals';
+      case NavRoute.punchlists:
+        return 'Punchlists';
       case NavRoute.importProjectInformation:
         return 'Import Project Information';
       case NavRoute.settings:
@@ -131,14 +133,10 @@ const List<SidebarGroup> sidebarGroups = [
     NavRoute.programming,
     NavRoute.clientProvided,
     NavRoute.photos,
-    NavRoute.projectInformationList,
-  ]),
-  SidebarGroup(id: 'design', label: 'DESIGN PHASES', items: [
-    NavRoute.schematicDesign,
-    NavRoute.designDevelopment,
-    NavRoute.constructionDocuments,
   ]),
   SidebarGroup(id: 'disciplines', label: 'DISCIPLINES', items: [
+    NavRoute.general,
+    NavRoute.structural,
     NavRoute.architectural,
     NavRoute.civil,
     NavRoute.landscape,
@@ -146,6 +144,7 @@ const List<SidebarGroup> sidebarGroups = [
     NavRoute.electrical,
     NavRoute.plumbing,
     NavRoute.fireProtection,
+    NavRoute.closeoutDocuments,
   ]),
   SidebarGroup(id: 'deliverables', label: 'DELIVERABLES & MEDIA', items: [
     NavRoute.progressPrints,
@@ -158,6 +157,7 @@ const List<SidebarGroup> sidebarGroups = [
     NavRoute.asis,
     NavRoute.changeOrders,
     NavRoute.submittals,
+    NavRoute.punchlists,
   ]),
 ];
 

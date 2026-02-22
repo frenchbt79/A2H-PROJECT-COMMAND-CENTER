@@ -27,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(50, 50);
   Win32Window::Size size(1920, 1080);
-  if (!window.Create(L"Project Command Center", origin, size)) {
+  if (!window.Create(L"A2H Project Dashboard", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

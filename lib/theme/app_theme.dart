@@ -14,14 +14,21 @@ class AppTheme {
         surface: Tokens.bgMid,
         onSurface: Tokens.textPrimary,
       ),
-      textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
+      textTheme: GoogleFonts.workSansTextTheme(base.textTheme).apply(
         bodyColor: Tokens.textPrimary,
         displayColor: Tokens.textPrimary,
       ),
       iconTheme: const IconThemeData(color: Tokens.textSecondary, size: 20),
+      tooltipTheme: const TooltipThemeData(
+        height: 0,
+        padding: EdgeInsets.zero,
+        decoration: BoxDecoration(color: Colors.transparent),
+        textStyle: TextStyle(fontSize: 0, color: Colors.transparent),
+        waitDuration: Duration(days: 999),
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Tokens.bgMid,
-        contentTextStyle: GoogleFonts.inter(color: Tokens.textPrimary),
+        contentTextStyle: GoogleFonts.workSans(color: Tokens.textPrimary),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Tokens.radiusMd),
@@ -30,19 +37,19 @@ class AppTheme {
     );
   }
 
-  // Shorthand text styles
+  // Shorthand text styles — Fraunces for headings, Work Sans for body
   static TextStyle get heading =>
-      GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, color: Tokens.textPrimary);
+      GoogleFonts.fraunces(fontSize: 22, fontWeight: FontWeight.w700, color: Tokens.textPrimary);
 
   static TextStyle get subheading =>
-      GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Tokens.textPrimary);
+      GoogleFonts.fraunces(fontSize: 16, fontWeight: FontWeight.w600, color: Tokens.textPrimary);
 
   static TextStyle get body =>
-      GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: Tokens.textPrimary);
+      GoogleFonts.workSans(fontSize: 14, fontWeight: FontWeight.w400, color: Tokens.textPrimary);
 
   static TextStyle get caption =>
-      GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Tokens.textSecondary);
+      GoogleFonts.workSans(fontSize: 12, fontWeight: FontWeight.w500, color: Tokens.textSecondary);
 
   static TextStyle get sidebarGroupLabel =>
-      GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Tokens.textMuted, letterSpacing: 1.2);
+      GoogleFonts.workSans(fontSize: 11, fontWeight: FontWeight.w700, color: Tokens.textMuted, letterSpacing: 1.2);
 }

@@ -1,4 +1,49 @@
 import 'package:flutter/material.dart';
+import '../utils/format_utils.dart';
+
+// ── Project Entry (for multi-project selector) ─────────────
+class ProjectEntry {
+  final String id;
+  final String name;
+  final String number;
+  final String folderPath;
+  final bool isPinned;
+  final String client;    // e.g. 'Baptist Memorial', 'School District'
+  final String status;    // 'Active', 'Review', 'Closed', 'On Hold'
+  final double progress;  // 0.0 – 1.0
+
+  const ProjectEntry({
+    required this.id,
+    required this.name,
+    required this.number,
+    required this.folderPath,
+    this.isPinned = false,
+    this.client = '',
+    this.status = 'Active',
+    this.progress = 0.0,
+  });
+
+  ProjectEntry copyWith({
+    String? id,
+    String? name,
+    String? number,
+    String? folderPath,
+    bool? isPinned,
+    String? client,
+    String? status,
+    double? progress,
+  }) =>
+      ProjectEntry(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        number: number ?? this.number,
+        folderPath: folderPath ?? this.folderPath,
+        isPinned: isPinned ?? this.isPinned,
+        client: client ?? this.client,
+        status: status ?? this.status,
+        progress: progress ?? this.progress,
+      );
+}
 
 // ── Team Member ────────────────────────────────────────────
 class TeamMember {
@@ -116,12 +161,7 @@ class ProjectFile {
     required this.modified,
   });
 
-  String get sizeLabel {
-    if (sizeBytes > 1024 * 1024) {
-      return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(sizeBytes / 1024).toStringAsFixed(0)} KB';
-  }
+  String get sizeLabel => FormatUtils.fileSize(sizeBytes);
 }
 
 // ── Deadline ───────────────────────────────────────────────
@@ -209,12 +249,7 @@ class PhaseDocument {
     this.revision = 0,
   });
 
-  String get sizeLabel {
-    if (sizeBytes > 1024 * 1024) {
-      return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(sizeBytes / 1024).toStringAsFixed(0)} KB';
-  }
+  String get sizeLabel => FormatUtils.fileSize(sizeBytes);
 }
 
 // ── Print Set ────────────────────────────────────────────
@@ -364,6 +399,7 @@ class ActivityItem {
   final DateTime timestamp;
   final String category; // 'rfi', 'asi', 'schedule', 'budget', 'document', 'team', 'todo'
   final bool isRead;
+  final String? filePath; // optional path to open a file from notification
 
   const ActivityItem({
     required this.id,
@@ -372,6 +408,7 @@ class ActivityItem {
     required this.timestamp,
     required this.category,
     this.isRead = false,
+    this.filePath,
   });
 
   ActivityItem copyWith({bool? isRead}) => ActivityItem(
@@ -381,6 +418,7 @@ class ActivityItem {
     timestamp: timestamp,
     category: category,
     isRead: isRead ?? this.isRead,
+    filePath: filePath,
   );
 }
 
@@ -390,11 +428,17 @@ class ProjectInfoEntry {
   final String category; // 'General', 'Codes & Standards', 'Zoning', 'Contacts', 'Site'
   final String label;
   final String value;
+  final String source;       // 'manual', 'sheet', 'city', 'contract', 'inferred'
+  final double confidence;   // 0.0 – 1.0
+  final DateTime? lastUpdated;
 
   const ProjectInfoEntry({
     required this.id,
     required this.category,
     required this.label,
     required this.value,
+    this.source = 'manual',
+    this.confidence = 1.0,
+    this.lastUpdated,
   });
 }

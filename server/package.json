@@ -1,0 +1,14 @@
+{
+  "name": "project-command-center-api",
+  "version": "1.0.0",
+  "description": "Local file-system API for Project Command Center (serves both Windows + iPhone web builds)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

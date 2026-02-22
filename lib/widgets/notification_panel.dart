@@ -4,6 +4,8 @@ import '../theme/tokens.dart';
 import '../theme/app_theme.dart';
 import '../models/project_models.dart';
 import '../state/project_providers.dart';
+import '../services/folder_scan_service.dart' show FolderScanService;
+import '../state/nav_state.dart';
 
 class NotificationBell extends ConsumerWidget {
   const NotificationBell({super.key});
@@ -125,19 +127,40 @@ class _NotificationSheet extends ConsumerWidget {
   }
 }
 
-class _ActivityTile extends StatelessWidget {
+class _ActivityTile extends ConsumerWidget {
   final ActivityItem item;
   final VoidCallback onTap;
   const _ActivityTile({required this.item, required this.onTap});
 
+  static NavRoute? _categoryRoute(String cat) => switch (cat) {
+    'rfi' => NavRoute.rfis,
+    'asi' => NavRoute.asis,
+    'schedule' => NavRoute.schedule,
+    'budget' => NavRoute.budget,
+    'document' => NavRoute.general,
+    'team' => NavRoute.projectTeam,
+    'todo' => NavRoute.dashboard,
+    _ => null,
+  };
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final icon = _categoryIcon(item.category);
     final color = _categoryColor(item.category);
     final timeAgo = _formatTimeAgo(item.timestamp);
+    final hasFile = item.filePath != null && item.filePath!.isNotEmpty;
+    final route = _categoryRoute(item.category);
 
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        onTap();
+        if (hasFile) {
+          FolderScanService.openFile(item.filePath!);
+        } else if (route != null) {
+          ref.read(navProvider.notifier).selectPage(route);
+          Navigator.of(context).pop();
+        }
+      },
       child: Container(
         color: item.isRead ? Colors.transparent : Tokens.accent.withValues(alpha: 0.04),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -169,6 +192,14 @@ class _ActivityTile extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          hasFile ? Icons.open_in_new : Icons.chevron_right,
+                          size: 12,
+                          color: Tokens.accent.withValues(alpha: 0.7),
                         ),
                       ),
                       if (!item.isRead)
